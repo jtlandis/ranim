@@ -2,7 +2,7 @@ point <- new_class(
   "point",
   parent = shape,
   properties = list(
-    size = scalar_num,
+    size = scalar_num
   )
 )
 

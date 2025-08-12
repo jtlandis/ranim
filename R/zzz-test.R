@@ -7,6 +7,9 @@ source("R/class-shape.R")
 source("R/rotate.R")
 source("R/render.R")
 source("R/render-helpers.R")
+source("R/shape-point.R")
+source("R/shape-rect.R")
+source("R/shape-polygon.R")
 
 
 
