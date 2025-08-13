@@ -29,7 +29,7 @@ shape <- new_class("shape",
             self@parent <- NULL
             for (i in seq_along(parent@children)) {
               if (identical(parent@children[[i]], self)) {
-                parent@children <- parent@children[-i]
+                attr(parent, "children") <- parent@children[-i]
                 break
               }
             }
@@ -40,8 +40,9 @@ shape <- new_class("shape",
           }
           # set the parent
           self@parent <- value
+          self@trans@anchor <- value@global
           # add self to the parent's children
-          value@children <- c(value@children, list(self))
+          attr(value, "children") <- c(value@children, list(self))
         }
         invisible(self)
       },
@@ -61,7 +62,8 @@ shape <- new_class("shape",
     children = new_property(
       class = class_list,
       validator = function(value) {
-        if (!is.list(value) || !all(vapply(value, function(x) S7_inherits(x, shape), logical(1)))) {
+        if (!is.list(value) ||
+          !all(vapply(value, function(x) S7_inherits(x, shape), logical(1)))) {
           return("children must be a list of shape objects")
         }
         NULL
@@ -71,21 +73,31 @@ shape <- new_class("shape",
       class = class_function,
       getter = function(self) {
         force(self)
-        function(shape, ..., offset = pos(), apply_child) {
-          if (!inherits(shape, "S7_class")) {
-            stop("shape must be a shape object", call. = FALSE)
+        function(child, offset = NULL) {
+          if (!S7_inherits(child, shape)) {
+            stop("`child` must be a shape object", call. = FALSE)
           }
-          child <- shape(
-            trans = transform(anchor = self@global, offset = offset),
-            ...,
-            parent = self
-          )
-          if (!missing(apply_child)) {
-            if (!is.function(apply_child)) {
-              stop("apply_child must be a function", call. = FALSE)
+          if (!is.null(offset)) {
+            if (!S7_inherits(offset, pos)) {
+              stop("`offset` should be NULL or a pos")
             }
-            child <- apply_child(child)
+            child@parent <- self
+            child@trans@offset <- offset
+            ## anchor positions likely need to be updated
+            update_trans(child)
+          } else {
+            # reset transform position to be
+            # anchored with the parent
+            global_pos <- child@global
+            child@parent <- self
+            child@trans@global <- global_pos
           }
+          # if (!missing(apply_child)) {
+          #   if (!is.function(apply_child)) {
+          #     stop("apply_child must be a function", call. = FALSE)
+          #   }
+          #   child <- apply_child(child)
+          # }
           self
         }
       }
@@ -174,4 +186,17 @@ method(obj_size, shape) <- function(obj) {
 
 method(obj_anchor, shape) <- function(obj) {
   obj@trans@anchor
+}
+
+update_trans <- function(self) {
+  children <- self@children
+  if (length(children) == 0) {
+    return(self)
+  }
+  global <- self@trans@global
+  for (child in children) {
+    child@trans@anchor <- global
+    update_trans(child)
+  }
+  self
 }
