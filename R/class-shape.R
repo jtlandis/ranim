@@ -1,12 +1,12 @@
 env <- function(.data) {
-  if (missing(.data)) {
-    return(new.env(parent = emptyenv()))
+  out <- if (missing(.data)) {
+    new.env(parent = emptyenv())
+  } else {
+    if (!is.list(.data)) {
+      .data <- as.list(.data)
+    }
+    list2env(.data, parent = emptyenv())
   }
-
-  if (!is.list(.data)) {
-    .data <- as.list(.data)
-  }
-  out <- list2env(.data, parent = emptyenv())
   class(out) <- "env"
   out
 }
@@ -20,6 +20,31 @@ shape <- new_class("shape",
     parent = new_property(
       class = class_any,
       default = NULL,
+      setter = function(self, value) {
+        if (is.null(value)) {
+          # if we had a parent
+          # remove self from the parent's children
+          if (!is.null(self@parent)) {
+            parent <- self@parent
+            self@parent <- NULL
+            for (i in seq_along(parent@children)) {
+              if (identical(parent@children[[i]], self)) {
+                parent@children <- parent@children[-i]
+                break
+              }
+            }
+          }
+        } else {
+          if (!S7_inherits(value, shape)) {
+            stop("parent must be a shape object or NULL", call. = FALSE)
+          }
+          # set the parent
+          self@parent <- value
+          # add self to the parent's children
+          value@children <- c(value@children, list(self))
+        }
+        invisible(self)
+      },
       validator = function(value) {
         if (!is.null(value) && !S7_inherits(value, shape)) {
           return("parent must be a shape object or NULL")
@@ -61,16 +86,11 @@ shape <- new_class("shape",
             }
             child <- apply_child(child)
           }
-          attr(self, "children") <- c(self@children, list(child))
-          # self@children <- c(self@children, list(child))
           self
         }
       }
     ),
-    color = new_property(
-      class = class_color,
-      default = class_color("black")
-    ),
+    color = class_color,
     size = new_property(
       class = scalar_num,
       getter = function(self) {
@@ -103,7 +123,17 @@ shape <- new_class("shape",
         invisible(self)
       }
     )
-  )
+  ),
+  constructor = function(trans = transform(),
+                         parent = NULL,
+                         children = list(),
+                         color = "black",
+                         advance = NULL) {
+    new_object(env(),
+      trans = trans, parent = parent, children = children,
+      color = class_color(color), advance = advance
+    )
+  }
 )
 
 
