@@ -46,7 +46,7 @@ shape <- new_class("shape",
       class = class_function,
       getter = function(self) {
         force(self)
-        function(shape, offset = pos(), ..., apply_child) {
+        function(shape, ..., offset = pos(), apply_child) {
           if (!inherits(shape, "S7_class")) {
             stop("shape must be a shape object", call. = FALSE)
           }
@@ -72,16 +72,9 @@ shape <- new_class("shape",
       default = class_color("black")
     ),
     size = new_property(
-      class = class_numeric,
-      default = NULL,
+      class = scalar_num,
       getter = function(self) {
-        warning("@size is not set for this object")
-      },
-      validator = function(value) {
-        if (length(value) != 1 || is.na(value)) {
-          return("size must be a single non-missing numeric value")
-        }
-        NULL
+        self@trans@size
       }
     ),
     advance = new_property(
@@ -143,4 +136,12 @@ method(format, shape) <- function(x, indent = "", ...) {
 method(print, shape) <- function(x, ...) {
   cat(format(x), "\n")
   invisible(x)
+}
+
+method(obj_size, shape) <- function(obj) {
+  obj@trans@size
+}
+
+method(obj_anchor, shape) <- function(obj) {
+  obj@trans@anchor
 }

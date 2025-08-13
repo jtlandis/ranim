@@ -61,10 +61,42 @@ apoly <- new_class(
   }
 )
 
-scale_points_from_pos <- function(pts, scale, pos) {
-  out <- lapply(pts,
-    function(p, center) ((p - center) * scale) + center,
-    center = pos
+
+method(render, apoly) <- function(shape) {
+  pos <- shape@global
+  pts <- shape@points
+  xs <- vapply(pts, function(p) S7_data(p@x), numeric(1))
+  ys <- vapply(pts, function(p) S7_data(p@y), numeric(1))
+  graphics::polygon(
+    x = xs + S7_data(pos@x),
+    y = ys + S7_data(pos@y),
+    col = shape@color
   )
-  positions(!!!out)
+  if (length(shape@children)) {
+    for (child in shape@children) {
+      render(child)
+    }
+  }
+  invisible(shape)
 }
+
+method(obj_scale, list(apoly, pos)) <-
+  function(obj, around, ...,
+           size, scale = size / obj_size(obj),
+           local = FALSE, recursive = TRUE) {
+    obj@points <- positions(
+      !!!lapply(
+        obj@points,
+        scale_local_pos,
+        scale = scale
+      )
+    )
+    obj_scale(
+      obj = super(obj, shape),
+      around = around,
+      ...,
+      scale = scale,
+      local = local,
+      recursive = recursive
+    )
+  }

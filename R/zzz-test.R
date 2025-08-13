@@ -2,8 +2,10 @@ library(S7)
 
 source("R/class-scalars.R")
 source("R/class-pos.R")
+source("R/class-transform.R")
 source("R/class-color.R")
 source("R/class-shape.R")
+source("R/scale.R")
 source("R/rotate.R")
 source("R/render.R")
 source("R/render-helpers.R")
@@ -61,3 +63,15 @@ img_files <- list.files(path = "frames", pattern = "frame_.*\\.png", full.names 
 magick::image_read(img_files) |>
   magick::image_animate(fps = 100) |>
   magick::image_write("animation2.gif")
+
+
+tri <- apoly(
+  pos(),
+  pos(2, 0),
+  pos(0, 2),
+)@child(
+  apoly,
+  offset = pos(1, 1),
+  pos(), pos(1, 0), pos(0, 1),
+  color = "cyan"
+)
