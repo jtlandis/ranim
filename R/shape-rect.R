@@ -3,11 +3,11 @@ rect <- new_class("rect",
   properties = list(
     width = new_property(
       class = scalar_num,
-      default = 1
+      default = scalar(1)
     ),
     height = new_property(
       class = scalar_num,
-      default = 1
+      default = scalar(1)
     )
   )
 )
