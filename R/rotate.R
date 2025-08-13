@@ -65,6 +65,7 @@ rotate_trans <- function(trans, around, radians, local = FALSE) {
     )
   }
   trans@angle <- trans@angle + (radians * 180 / pi)
+  trans
 }
 
 rotate_local_pos <- function(obj, radians) {
