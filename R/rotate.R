@@ -54,7 +54,7 @@ method(rotate, list(transform, class_missing)) <- function(
 
 method(rotate, list(shape, pos)) <-
   function(obj, around, angle, new_anchor = NULL, ...) {
-    obj@trans@offset <- rotate_pos_around_pos(obj@trans@offset, around, angle)
+    obj@trans@global <- rotate_pos_around_pos(obj@trans@global, around, angle)
     new_anchor <- obj@global
     for (child in obj@children) {
       child@trans@anchor <- new_anchor
