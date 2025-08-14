@@ -35,7 +35,7 @@ method(
            local = FALSE) {
     obj_rotate(
       obj,
-      around = obj_anchor(obj),
+      around = obj_pos(obj),
       ...,
       radians = radians,
       local = local
@@ -109,6 +109,8 @@ method(obj_rotate, list(shape, pos)) <-
         )
         # obj@children[[which(obj@children == child)]] <- child
       }
+    } else {
+      update_trans(obj)
     }
 
     obj

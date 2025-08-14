@@ -1,3 +1,15 @@
+#' @param obj dispatch arg to scale
+#' @param around location to scale from
+#' @param ... for extensions
+#' @param size,target_size,scale These arguments
+#' do much of the same thing. `scale` determines the
+#' scaling factor that will be applied to transforms.
+#' target_scale represents the end size value the transform
+#' will have. `size` represents a value or delta to change
+#' the objects current size value. Note that for `size` and
+#' `target_size` are merely reparameteriztions for `scale`
+#' which will be the value used by inner functions.
+#' @export
 obj_scale <- new_generic(
   "obj_scale",
   c("obj", "around"),
@@ -5,22 +17,33 @@ obj_scale <- new_generic(
            around,
            ...,
            size,
-           scale = size / obj_size(obj),
+           target_size = obj_size(obj) + size,
+           scale = target_size / obj_size(obj),
            local = FALSE) {
     if (missing(size)) {
-      if (missing(scale)) {
-        stop("Either 'size' or 'scale' must be provided", call. = FALSE)
+      if (missing(target_size)) {
+        if (missing(scale)) {
+          stop("Either 'size' or 'scale' or 'target_size' must be provided",
+            call. = FALSE
+          )
+        } else {
+          target_size <- obj_size(obj) * scale
+        }
       } else {
-        size <- obj_size(obj) * scale
+        force(scale)
       }
-    } else {
-      if (!missing(scale)) {
-        warning(
-          "Both 'size' and 'scale' provided; 'scale' will be ignored",
-          call. = TRUE, immediate. = TRUE
-        )
+    } else if (!missing(scale)) {
+      warning(
+        "Both 'size' and 'scale' provided; 'size' will be ignored",
+        call. = TRUE, immediate. = TRUE
+      )
+    }
+    if (abs(scale) < 1e-12) {
+      scale <- if (scale == 0) {
+        1e-12
+      } else {
+        1e-12 * sign(scale)
       }
-      scale <- size / obj_size(obj)
     }
     S7_dispatch()
   }
@@ -34,12 +57,13 @@ method(
     around,
     ...,
     size,
-    scale = size / obj_size(obj),
+    target_size = obj_size(obj) + size,
+    scale = target_size / obj_size(obj),
     local = FALSE,
     recursive = TRUE) {
   obj_scale(
     obj = obj,
-    around = obj_anchor(obj),
+    around = obj_pos(obj),
     ...,
     scale = scale,
     local = local,
@@ -55,12 +79,12 @@ method(
     around,
     ...,
     size,
-    scale = size / obj_size(obj),
+    target_size = obj_size(obj) + size,
+    scale = target_size / obj_size(obj),
     local = FALSE) {
   scale_trans(
     trans = obj,
     around = around,
-    ...,
     scale = scale,
     local = local
   )
@@ -74,18 +98,18 @@ method(
     around,
     ...,
     size,
-    scale = size / obj_size(obj),
+    target_size = obj_size(obj) + size,
+    scale = target_size / obj_size(obj),
     local = FALSE,
     recursive = TRUE) {
   obj@trans <- scale_trans(
     trans = obj@trans,
     around = around,
-    ...,
     scale = scale,
     local = local
   )
   new_anchor <- obj@global
-  if (recursive && length(obj@children)) {
+  if (recursive) {
     for (child in obj@children) {
       child@trans@anchor <- new_anchor
       obj_scale(
@@ -97,6 +121,8 @@ method(
         recursive = recursive
       )
     }
+  } else {
+    update_trans(obj)
   }
   obj
 }
@@ -138,19 +164,19 @@ scale_points_from_pos <- function(pts, scale, pos) {
 # obj_scale <- new_generic(
 #   "obj_scale",
 #   c("obj", "around"),
-#   function(obj, around, size, scale = size / size(obj), ...) S7_dispatch()
+#   function(obj, around, target_size, scale = target_size / target_size(obj), ...) S7_dispatch()
 # )
 
 # obj_scale_local <- new_generic(
 #   "obj_scale_local",
 #   "obj",
-#   function(obj, size, scale, ...) S7_dispatch()
+#   function(obj, target_size, scale, ...) S7_dispatch()
 # )
 
 
 
 # method(obj_scale, list(transform, pos)) <-
-#   function(obj, around, size, scale, ...) {
+#   function(obj, around, target_size, scale, ...) {
 #     obj@global <- scale_pos_from_pos(
 #       obj@global,
 #       scale = scale,
@@ -160,7 +186,7 @@ scale_points_from_pos <- function(pts, scale, pos) {
 #   }
 
 # method(obj_scale, list(transform, class_missing)) <-
-#   function(obj, around, size, scale, ...) {
+#   function(obj, around, target_size, scale, ...) {
 #     obj@global <- scale_pos_from_pos(
 #       pos = obj@global,
 #       scale = scale,
@@ -185,7 +211,7 @@ scale_points_from_pos <- function(pts, scale, pos) {
 #       around = around,
 #       scale = scale
 #     )
-#     obj@size <- obj@size * scale
+#     obj@target_size <- obj@target_size * scale
 #     new_anchor <- obj@global
 #     for (child in obj@children) {
 #       child@trans@anchor <- new_anchor
@@ -197,7 +223,7 @@ scale_points_from_pos <- function(pts, scale, pos) {
 
 # method(obj_scale_local, shape) <- function(obj, scale, ...) {
 #   obj@trans <- obj_scale_local(obj@trans, scale = scale)
-#   obj@size <- obj@size * scale
+#   obj@target_size <- obj@target_size * scale
 #   new_anchor <- obj@global
 #   for (child in obj@children) {
 #     child@trans@anchor <- new_anchor

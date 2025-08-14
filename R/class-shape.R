@@ -200,3 +200,11 @@ update_trans <- function(self) {
   }
   self
 }
+
+method(obj_pos, shape) <- function(obj, local = FALSE) {
+  if (local) {
+    obj@trans@offset
+  } else {
+    obj@global
+  }
+}

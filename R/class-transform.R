@@ -46,6 +46,14 @@ obj_size <- new_generic(
   }
 )
 
+obj_pos <- new_generic(
+  "obj_pos",
+  "obj",
+  function(obj, local = FALSE) {
+    S7_dispatch()
+  }
+)
+
 method(
   obj_size,
   transform
@@ -81,4 +89,12 @@ method(
   transform
 ) <- function(obj) {
   obj@angle
+}
+
+method(obj_pos, transform) <- function(obj, local = FALSE) {
+  if (local) {
+    obj@offset
+  } else {
+    obj@global
+  }
 }

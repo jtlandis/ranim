@@ -82,7 +82,9 @@ method(render, apoly) <- function(shape) {
 
 method(obj_scale, list(apoly, pos)) <-
   function(obj, around, ...,
-           size, scale = size / obj_size(obj),
+           size,
+           target_size = obj_size(obj) + size,
+           scale = target_size / obj_size(obj),
            local = FALSE, recursive = TRUE) {
     obj@points <- positions(
       !!!lapply(
@@ -100,3 +102,34 @@ method(obj_scale, list(apoly, pos)) <-
       recursive = recursive
     )
   }
+
+method(obj_rotate, list(apoly, pos)) <-
+  function(obj, around,
+           ...,
+           radians = degrees * pi / 180,
+           degrees = radians * 180 / pi,
+           local = FALSE,
+           recursive = TRUE) {
+    obj@points <- positions(
+      !!!lapply(
+        obj@points,
+        rotate_local_pos,
+        radians = radians
+      )
+    )
+    obj_rotate(
+      obj = super(obj, shape),
+      around = around,
+      ...,
+      radians = radians,
+      local = local,
+      recursive = recursive
+    )
+  }
+
+method(get_positions, apoly) <- function(obj) {
+  lst <- lapply(obj@children, get_positions) |>
+    unlist()
+  points <- lapply(obj@points, \(p, g) p + g, g = obj@global)
+  positions(obj@global, !!!points, !!!lst)
+}

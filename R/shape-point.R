@@ -1,9 +1,6 @@
 point <- new_class(
   "point",
-  parent = shape,
-  properties = list(
-    size = scalar_num
-  )
+  parent = shape
 )
 
 method(render, point) <- function(shape) {
@@ -12,7 +9,7 @@ method(render, point) <- function(shape) {
     pch = 16,
     type = "p",
     col = shape@color,
-    cex = shape@size
+    cex = abs(shape@size)
   )
   if (length(shape@children)) {
     for (child in shape@children) {
