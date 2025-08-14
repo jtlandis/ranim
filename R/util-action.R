@@ -2,16 +2,20 @@ action <- new_class(
   "action",
   parent = class_function,
   properties = list(
-    time = time
+    time = time,
+    is_done = new_property(
+      class = class_logical,
+      getter = function(self) {
+        self@time@repeating < 0
+      }
+    )
   ),
-  constructor = function(
-      func,
-      time) {
-    
+  constructor = function(func,
+                         time) {
     if (!is.function(func)) {
       stop("func must be a function", call. = FALSE)
     }
-    if (identical(names(formals(func)), c("obj", "time"))) {
+    if (!identical(names(formals(func)), c("obj", "time"))) {
       stop("func must have exactly two arguments: (obj, time)", call. = FALSE)
     }
     new_object(

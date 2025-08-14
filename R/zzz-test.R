@@ -4,6 +4,10 @@ source("R/class-scalars.R")
 source("R/class-pos.R")
 source("R/class-transform.R")
 source("R/class-color.R")
+source("R/util-ease.R")
+source("R/class-env.R")
+source("R/class-time.R")
+source("R/util-action.R")
 source("R/class-shape.R")
 source("R/scale.R")
 source("R/rotate.R")
@@ -17,18 +21,49 @@ source("R/shape-polygon.R")
 
 
 s1 <- point(
-  trans = transform(offset = pos(5, 5)),
-  advance = function(self, time, delta) {
-    obj_rotate(self, pos(0, 0), degrees = 360 * delta)
-    if (time < .5) {
-      obj_scale(self, size = 2 * delta, recursive = FALSE)
-      self@color <- lerp_colors("black", "pink", time / 0.5)
-    } else {
-      obj_scale(self, size = -2 * delta, recursive = FALSE)
-      self@color <- lerp_colors("pink", "black", (time - 0.5) / 0.5)
-    }
-  }
+  trans = transform(offset = pos(5, 5))
+)@action(
+  action(
+    function(obj, time) {
+      # print(time)
+      obj_rotate(obj, pos(0, 0), degrees = 360 * time@delta)
+      if (time@time < .5) {
+        obj_scale(obj, size = 2 * time@delta, recursive = FALSE)
+        obj@color <- lerp_colors("black", "pink", time@time / 0.5)
+      } else {
+        obj_scale(obj, size = -2 * time@delta, recursive = FALSE)
+        obj@color <- lerp_colors("pink", "black", (time@time - 0.5) / 0.5)
+      }
+    },
+    time = time(10)
+  )
 )
+
+render_frame(s1, -10:10, -10:10)
+while(s1@act()) render(s1)
+
+s1 <- point(
+  trans = transform(offset = pos(5, 5))
+)@action(
+  action(
+    function(obj, time) {
+      # print(time)
+      obj_rotate(obj, pos(0, 0), degrees = 360 * time@delta)
+      if (time@time < .5) {
+        obj_scale(obj, size = 2 * time@delta, recursive = FALSE)
+        obj@color <- lerp_colors("black", "pink", time@time / 0.5)
+      } else {
+        obj_scale(obj, size = -2 * time@delta, recursive = FALSE)
+        obj@color <- lerp_colors("pink", "black", (time@time - 0.5) / 0.5)
+      }
+    },
+    time = time(10, mode = "inc")
+  )
+)
+
+render_frame(s1, -10:10, -10:10)
+while(s1@act()) render(s1)
+
 s1@
 child(
   offset = pos(1, 1),
@@ -46,7 +81,7 @@ child(
     point(
       advance = function(self, time, delta) {
         obj_rotate(self, degrees = 720 * delta, local = TRUE)
-        if (time < 0.5) {
+        if (time@time < 0.5) {
           self@color <- lerp_colors("purple", "yellow", time / 0.5)
         } else {
           self@color <- lerp_colors("yellow", "purple", (time - 0.5) / 0.5)
@@ -102,7 +137,7 @@ stuff@advance <- function(self, time, delta) {
 
 action(function(obj, time) {
   obj_rotate(obj, degrees = 360 * time@delta)
-}, time = time(steps = 100,))
+}, time = time(ease = ease(ecos, esin)))
 
 for (i in seq_len(800)) {
   stuff@advance(time = i / 800, delta = 1 / 800)

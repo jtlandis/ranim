@@ -1,18 +1,3 @@
-env <- function(.data) {
-  out <- if (missing(.data)) {
-    new.env(parent = emptyenv())
-  } else {
-    if (!is.list(.data)) {
-      .data <- as.list(.data)
-    }
-    list2env(.data, parent = emptyenv())
-  }
-  class(out) <- "env"
-  out
-}
-
-class_env <- new_S3_class("env", constructor = env)
-
 shape <- new_class("shape",
   parent = class_env,
   properties = list(
@@ -102,6 +87,60 @@ shape <- new_class("shape",
         }
       }
     ),
+    actions = new_property(
+      class = class_list,
+      default = list(),
+      validator = function(value) {
+        if (!is.list(value) ||
+          !all(vapply(value, \(x) S7_inherits(x, action), logical(1)))) {
+          return("actions must be a list of action objects")
+        }
+        NULL
+      }
+    ),
+    action = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function(func, time) {
+          if (!S7_inherits(func, action)) {
+            if (missing(time) ||
+              (!S7_inherits(time, class_time) && !is.function(func))) {
+              stop("`func` must be an action object or a function",
+                call. = FALSE
+              )
+            }
+            func <- action(func, time = time)
+          }
+          attr(self, "actions") <- c(self@actions, list(func))
+          invisible(self)
+        }
+      }
+    ),
+    act = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function() {
+          actions <- self@actions
+          to_rm <- logical(length(actions))
+          for (i in seq_along(actions)) {
+            action <- actions[[i]]
+            action(self)
+            if (action@is_done) {
+              to_rm[i] <- TRUE
+            }
+          }
+          if (any(to_rm)) {
+            attr(self, "actions") <- actions[!to_rm]
+          }
+          for (child in self@children) {
+            child@act()
+          }
+          invisible(length(actions) > 0)
+        }
+      }
+    ),
     color = class_color,
     size = new_property(
       class = scalar_num,
@@ -139,11 +178,13 @@ shape <- new_class("shape",
   constructor = function(trans = transform(),
                          parent = NULL,
                          children = list(),
+                         actions = list(),
                          color = "black",
                          advance = NULL) {
     new_object(env(),
       trans = trans, parent = parent, children = children,
-      color = class_color(color), advance = advance
+      color = class_color(color), advance = advance,
+      actions = actions
     )
   }
 )
