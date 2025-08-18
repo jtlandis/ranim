@@ -134,10 +134,11 @@ shape <- new_class("shape",
           if (any(to_rm)) {
             attr(self, "actions") <- actions[!to_rm]
           }
-          for (child in self@children) {
-            child@act()
+          child_acting <- logical(length(self@children))
+          for (i in seq_along(child_acting)) {
+            child_acting[i] <- self@children[[i]]@act()
           }
-          invisible(length(actions) > 0)
+          invisible(length(actions) > 0 || any(child_acting))
         }
       }
     ),
@@ -209,7 +210,10 @@ method(format, shape) <- function(x, indent = "", ...) {
     "%s\n%s", this,
     paste(indent,
       "* ",
-      vapply(x@children, function(kid) format(kid, paste0(indent, "    ")), character(1)),
+      vapply(
+        x@children,
+        function(kid) format(kid, paste0(indent, "    ")), character(1)
+      ),
       collapse = "\n"
     )
   )
