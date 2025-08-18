@@ -1,166 +1,3 @@
-`!bang` <- quote(`!`)
-
-
-is_splice <- function(x) {
-  if (is.call(x) && identical(x[[1]], `!bang`)) {
-    xsub <- x[[2]]
-    if (is.call(xsub) && identical(xsub[[1]], `!bang`)) {
-      xsub <- xsub[[2]]
-      if (is.call(xsub) && identical(xsub[[1]], `!bang`)) {
-        return(TRUE)
-      }
-    }
-  }
-  FALSE
-}
-
-spliced <- function(x) {
-  attr(x, "spliced") <- TRUE
-  x
-}
-
-splice <- function(x) {
-  is_spliced <- vapply(x, \(x) !is.null(attr(x, "spliced")), logical(1))
-  if (!any(is_spliced)) {
-    return(x)
-  }
-  n <- length(x)
-  sizes <- rep(1L, n)
-  sizes[is_spliced] <- vapply(x[is_spliced], length, integer(1))
-  out <- vector("list", sum(sizes))
-  k <- 1L
-  for (i in seq_along(x)) {
-    if (is_spliced[i]) {
-      xx <- x[[i]]
-      for (j in seq_along(xx)) {
-        out[[k]] <- xx[[j]]
-        k <- k + 1L
-      }
-      next
-    }
-    out[[k]] <- x[[i]]
-    k <- k + 1L
-  }
-  out
-}
-
-
-#' replicates bquote except with rlang syntax
-#' x <- quote(foo)
-#' y <- as_expr2(mean(!!x))
-#' print(y)
-unquote <- function(x, where) {
-  # browser()
-  if (is.call(x)) {
-    # if the first element is `!bang` then
-    # we could be unquoting this.
-    if (identical(x[[1]], `!bang`)) {
-      xsub <- x[[2]]
-      # if not a call and not `!bang` then
-      # this is not a quoting call.
-      if (is.call(xsub) && identical(xsub[[1]], `!bang`)) {
-        xsub <- xsub[[2]]
-        if (is.call(xsub) && identical(xsub[[1]], `!bang`)) {
-          xsub <- xsub[[2]]
-          x <- spliced(eval(xsub, where))
-        } else {
-          if (is.call(xsub)) {
-            sub_call <- eval(xsub[[1]], where)
-            if (!is.name(sub_call)) {
-              stop(
-                sprintf(
-                  "issue unquoting `%s(...)`. `is.name(!!%s)` is not true",
-                  as.character(xsub[[1]]), as.character(xsub[[1]])
-                ),
-                call. = FALSE
-              )
-            }
-            x <- unquote(xsub, where = where)
-            x[[1]] <- sub_call
-          } else {
-            x <- eval(xsub, where)
-          }
-        }
-      } else {
-        x[[2]] <- unquote(x[[2]], where = where)
-      }
-    } else {
-      x <- x |>
-        lapply(unquote, where = where) |>
-        splice() |>
-        as.call()
-    }
-  } else if (is.pairlist(x)) {
-    x <- x |>
-      lapply(unquote, where = where) |>
-      splice() |>
-      as.pairlist()
-  }
-  x
-}
-
-enexpr <- function(x) {
-  # some arugment passed to this function
-  subx <- substitute(x)
-  env <- parent.frame()
-  # potentually how it was passed to its function
-  subx <- do.call(substitute, list(subx), envir = env)
-  unquote(subx, where = parent.frame(2L))
-}
-
-expr <- function(x) {
-  enexpr(x)
-}
-
-
-
-enexprs <- function(...) {
-  subx <- substitute(list(...))
-  env <- parent.frame(2L)
-  unquote(subx, where = env)
-}
-
-exprs <- function(...) {
-  as.list(enexprs(...)[-1])
-}
-
-list2 <- function(...) {
-  subx <- substitute(list(...))
-  is_spliced <- vapply(subx, is_splice, logical(1))[-1]
-  if (!any(is_spliced)) {
-    return(list(...))
-  }
-  n <- length(is_spliced)
-
-  elements <- vector("list", n)
-  env <- parent.frame()
-  for (i in seq_along(elements)) {
-    if (is_spliced[i]) {
-      elements[[i]] <- eval(subx[[i + 1L]][[2L]][[2L]][[2L]], envir = env)
-    } else {
-      elements[[i]] <- ...elt(i)
-    }
-  }
-  sizes <- rep(1L, n)
-  sizes[is_spliced] <- vapply(elements[is_spliced], length, integer(1))
-  out <- vector("list", sum(sizes))
-  k <- 1L
-  for (i in seq_along(elements)) {
-    if (is_spliced[i]) {
-      xx <- elements[[i]]
-      for (j in seq_along(xx)) {
-        out[[k]] <- xx[[j]]
-        k <- k + 1L
-      }
-      next
-    }
-    out[[k]] <- elements[[i]]
-    k <- k + 1L
-  }
-  out
-  # eval(exprs, envir = parent.frame())
-}
-
 ensub <- function(expr, env) {
   if (missing(env)) {
     env <- parent.frame()
@@ -178,7 +15,7 @@ expr_map <- new_class(
       getter = function(self) {
         force(self)
         function(expr) {
-          expr <- enexpr(expr)
+          expr <- rlang::enexpr(expr)
           env <- list(self@to)
           names(env) <- as.character(self@from)
           do.call(substitute, list(expr, env))
@@ -187,8 +24,8 @@ expr_map <- new_class(
     )
   ),
   constructor = function(from, to) {
-    from <- enexpr(from)
-    to <- enexpr(to)
+    from <- rlang::enexpr(from)
+    to <- rlang::enexpr(to)
     new_object(S7_object(), from = from, to = to)
   }
 )
@@ -234,8 +71,7 @@ act_series <- new_class(
     )
   ),
   constructor = function(...) {
-    browser()
-    dots <- list2(...)
+    dots <- rlang::list2(...)
     if (!all(
       vapply(dots, \(x) S7_inherits(x, action), logical(1))
     )) {
