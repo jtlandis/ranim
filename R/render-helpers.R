@@ -21,7 +21,7 @@ get_extent <- function(obj) {
   )
 }
 
-plot_cords <- function(x, y, shape) {
+plot_cords <- function(x = NULL, y = NULL, shape) {
   if (is.null(x) || is.null(y)) {
     ext <- get_extent(shape)
     xlim <- ext$xlim

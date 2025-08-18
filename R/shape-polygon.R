@@ -53,10 +53,10 @@ apoly <- new_class(
                          trans = transform(pos(), pos()),
                          parent = NULL,
                          children = list(),
-                         color = "black", advance = NULL) {
+                         color = "black") {
     S7::new_object(shape(
       trans = trans, parent = parent,
-      children = children, color = class_color(color), advance = advance
+      children = children, color = class_color(color)
     ), points = positions(...))
   }
 )

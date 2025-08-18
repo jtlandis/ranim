@@ -12,10 +12,13 @@ source("R/class-shape.R")
 source("R/scale.R")
 source("R/rotate.R")
 source("R/render.R")
+source("R/util-actions.R")
 source("R/render-helpers.R")
 source("R/shape-point.R")
 source("R/shape-rect.R")
 source("R/shape-polygon.R")
+source("R/class-window.R")
+source("R/clone.R")
 
 
 

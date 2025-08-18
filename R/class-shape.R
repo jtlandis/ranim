@@ -147,43 +147,42 @@ shape <- new_class("shape",
       getter = function(self) {
         self@trans@size
       }
-    ),
-    advance = new_property(
-      class = new_union(NULL, class_function),
-      default = NULL,
-      getter = function(self) {
-        force(self)
-        function(time, delta) {
-          fn <- attr(self, "advance")
-          if (is.function(fn)) {
-            fn(self, time, delta)
-          }
-          for (child in self@children) {
-            child@advance(time, delta)
-          }
-        }
-      },
-      setter = function(self, value) {
-        if (!is.null(value) && !is.function(value)) {
-          stop("advance must be a function or NULL", call. = FALSE)
-        }
-        if (!is.null(value) && !identical(names(formals(value)), c("self", "time", "delta"))) {
-          stop("advance function must have 'self', 'time', and 'delta' as arguments", call. = FALSE)
-        }
-        attr(self, "advance") <- value
-        invisible(self)
-      }
     )
+    # advance = new_property(
+    #   class = new_union(NULL, class_function),
+    #   default = NULL,
+    #   getter = function(self) {
+    #     force(self)
+    #     function(time, delta) {
+    #       fn <- attr(self, "advance")
+    #       if (is.function(fn)) {
+    #         fn(self, time, delta)
+    #       }
+    #       for (child in self@children) {
+    #         child@advance(time, delta)
+    #       }
+    #     }
+    #   },
+    #   setter = function(self, value) {
+    #     if (!is.null(value) && !is.function(value)) {
+    #       stop("advance must be a function or NULL", call. = FALSE)
+    #     }
+    #     if (!is.null(value) && !identical(names(formals(value)), c("self", "time", "delta"))) {
+    #       stop("advance function must have 'self', 'time', and 'delta' as arguments", call. = FALSE)
+    #     }
+    #     attr(self, "advance") <- value
+    #     invisible(self)
+    #   }
+    # )
   ),
   constructor = function(trans = transform(),
                          parent = NULL,
                          children = list(),
                          actions = list(),
-                         color = "black",
-                         advance = NULL) {
+                         color = "black") {
     new_object(env(),
       trans = trans, parent = parent, children = children,
-      color = class_color(color), advance = advance,
+      color = class_color(color), # advance = advance,
       actions = actions
     )
   }

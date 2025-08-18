@@ -40,6 +40,10 @@ method(`-`, list(scalar_num, scalar_num)) <- function(e1, e2) {
   scalar(S7_data(e1) - S7_data(e2))
 }
 
+method(`-`, list(scalar_num, class_missing)) <- function(e1, e2) {
+  scalar(-S7_data(e1))
+}
+
 method(`*`, list(scalar_num, scalar_num)) <- function(e1, e2) {
   scalar(S7_data(e1) * S7_data(e2))
 }
@@ -70,4 +74,23 @@ method(`>=`, list(scalar_num, scalar_num)) <- function(e1, e2) {
 }
 method(`<=`, list(scalar_num, scalar_num)) <- function(e1, e2) {
   S7_data(e1) <= S7_data(e2)
+}
+
+
+scalar_prop <- function(name) {
+  name <- substitute(name)
+  expr <- substitute(
+    new_property(
+      class = scalar_num,
+      getter = function(self) {
+        self@name
+      },
+      setter = function(self, value) {
+        self@name <- scalar(value)
+        self
+      }
+    )
+  )
+  env <- parent.frame()
+  eval(expr, envir = env)
 }

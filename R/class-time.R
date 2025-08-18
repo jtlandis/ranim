@@ -2,7 +2,7 @@ time <- new_class(
   "time",
   parent = class_env,
   properties = list(
-    time = scalar_num,
+    time = scalar_prop(time),
     delta_time = new_property(
       class = scalar_num,
       getter = function(self) {
@@ -10,9 +10,9 @@ time <- new_class(
       }
     ),
     last_time = new_union(NULL, new_S3_class("POSIXct")),
-    time_scale = scalar_num,
-    value = scalar_num,
-    delta = scalar_num,
+    time_scale = scalar_prop(time_scale),
+    value = scalar_prop(value),
+    delta = scalar_prop(delta),
     step = new_property(
       class = class_function,
       getter = function(self) {
@@ -34,18 +34,18 @@ time <- new_class(
               attr(self, "delta_time") <- scalar(delta_time)
               self@time <- self@time + (self@time_scale * delta_time)
             },
-            increment = {
+            fps = {
               self@time <- self@time + self@delta_time
             }
           )
           if (self@time >= 1) {
-            if (self@repeating >= 0) {
+            if (self@repeating > 0) {
               self@time <- scalar(0)
-              self@value <- self@ease(self@time)
-              self@repeating <- self@repeating - 1
+              old_value <- old_value - 1
             } else {
               self@time <- scalar(1)
             }
+            self@repeating <- self@repeating - 1
           }
           self@value <- self@ease(self@time)
           self@delta <- self@value - old_value
@@ -68,16 +68,19 @@ time <- new_class(
         invisible(self)
       }
     ),
-    repeating = new_property(
-      class = scalar_num,
-      default = scalar(0),
-    ),
+    repeating = scalar_prop(repeating),
     mode = new_property(
       class = class_character,
       setter = function(self, value) {
-        value <- match.arg(value, c("time", "increment"))
+        value <- match.arg(value, c("time", "fps"))
         attr(self, "mode") <- value
         invisible(self)
+      }
+    ),
+    duration = new_property(
+      class = scalar_num,
+      getter = function(self) {
+        1 / self@time_scale
       }
     )
   ),
@@ -93,9 +96,9 @@ time <- new_class(
       last_time = NULL,
       delta_time = time_scale / 50, # 50 FPS
       value = ease(time),
-      delta = scalar(0),
+      delta = 0,
       ease = ease,
-      repeating = scalar(repeating),
+      repeating = repeating,
       mode = mode
     )
   }
@@ -103,11 +106,11 @@ time <- new_class(
 
 class_time <- time
 
-ease_in_out_sine <- function(t) {
-  -0.5 * (cos(pi * t) - 1)
-}
-start <- 0
-end <- 100
-t <- seq(0, 1, length.out = 100)
-values <- start + (end - start) * ease_in_out_sine(t)
-plot(t, values, type = "l")
+# ease_in_out_sine <- function(t) {
+#   -0.5 * (cos(pi * t) - 1)
+# }
+# start <- 0
+# end <- 100
+# t <- seq(0, 1, length.out = 100)
+# values <- start + (end - start) * ease_in_out_sine(t)
+# plot(t, values, type = "l")
