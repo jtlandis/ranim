@@ -6,7 +6,7 @@ set_action_time <- new_generic(
   }
 )
 
-set_time_fps <- function(fps) {
+set_time_mode_fps <- function(fps) {
   force(fps)
   function(obj) {
     obj@time@mode <- "fps"
@@ -15,9 +15,17 @@ set_time_fps <- function(fps) {
   }
 }
 
-set_time_time <- function() {
+set_time_mode_time <- function() {
   function(obj) {
     obj@time@mode <- "time"
+    invisible(obj)
+  }
+}
+
+set_time_start <- function(start_time) {
+  force(start_time)
+  function(obj) {
+    obj@time@start_time <- start_time
     invisible(obj)
   }
 }
@@ -26,7 +34,7 @@ method(set_action_time, action) <- function(obj, f) {
   f(obj)
 }
 method(set_action_time, act_series) <- function(obj, f) {
-  for (action in obj@actions$.data) {
+  for (action in obj@actions) {
     set_action_time(action, f)
   }
   f(obj)
@@ -68,10 +76,10 @@ window <- new_class(
         }
         if (is.null(value)) {
           ## all time actions are in real time mode
-          set_action_time(self, set_time_time())
+          set_action_time(self, set_time_mode_time())
         } else {
           ## all time actions are in fps mode
-          set_action_time(self, set_time_fps(value))
+          set_action_time(self, set_time_mode_fps(value))
         }
         attr(self, "fps") <- value
         invisible(self)

@@ -43,7 +43,7 @@ s1 <- point(
 )
 
 render_frame(s1, -10:10, -10:10)
-while(s1@act()) render(s1)
+while (s1@act()) render(s1)
 
 s1 <- point(
   trans = transform(offset = pos(5, 5))
@@ -65,7 +65,7 @@ s1 <- point(
 )
 
 render_frame(s1, -10:10, -10:10)
-while(s1@act()) render(s1)
+while (s1@act()) render(s1)
 
 s1@
 child(
@@ -132,6 +132,40 @@ tri <- apoly(
   offset = pos(1, 1)
 )
 stuff@child(points)@child(tri)
+stuff@action(
+  act_series(
+    rotate(
+      360,
+      time(
+        duration = 3,
+        ease = ease(ecubic)
+      )
+    ),
+    scale(2, time(1.4, ease = ease(ecos))),
+    scale(-2, time(2, ease = ease(ecubic, ecubic)))
+))
+render_frame(stuff, -10:10, -10:10)
+i <- 0L
+ii <- 0L
+time <- Sys.time()
+while (stuff@act()) {
+  d <- Sys.time() - time
+  if (d > 1) {
+    time <- Sys.time()
+    cat(sprintf("FPS %i, time: %s\n", i - ii, d))
+    ii <- i
+  }
+  png(sprintf("frames/frame_%04i.png", i))
+  render_frame(stuff, -10:10, -10:10)
+  i <- i + 1L
+  dev.off()
+}
+
+img_files <- list.files(path = "frames", pattern = "frame_.*\\.png", full.names = TRUE)
+magick::image_read(img_files) |>
+  magick::image_animate(fps = 100) |>
+  magick::image_write("animation4.gif")
+
 
 stuff@advance <- function(self, time, delta) {
   obj_rotate(self, degrees = 720 * delta)
@@ -155,3 +189,66 @@ magick::image_read(img_files) |>
   magick::image_write("animation3.gif")
 
 render_frame(stuff, -1:5, -1:5)
+
+w <- window(
+  bl = pos(-1, -1),
+  tr = pos(1, 1)
+)@action(
+  act_series(
+    action(
+      function(obj, time) {
+        cat(sprintf("child1: %s\n", format(time)))
+        obj_scale(obj, size = 2 * time@delta, recursive = FALSE)
+      },
+      time(10, ease = ease(ecubic))
+    ),
+    action(
+      function(obj, time) {
+        cat(sprintf("child2: %s\n", format(time)))
+        obj_rotate(obj, degrees = 360 * time@delta, local = TRUE)
+      },
+      time(5)
+    )
+  )
+)@child(
+  apoly(
+    pos(-3, -3),
+    pos(3, -3),
+    pos(3, 3),
+    pos(-3, 3),
+    color = "red"
+  )
+)@child(
+  apoly(
+    pos(-2, -2),
+    pos(2, -2),
+    pos(2, 2),
+    pos(-2, 2),
+    color = "blue"
+  )
+)@child(
+  apoly(
+    pos(-1, -1),
+    pos(1, -1),
+    pos(1, 1),
+    pos(-1, 1),
+    color = "green"
+  )
+)
+
+p <- point(
+  trans = transform(offset = pos(.5, 0)),
+  color = "red"
+)
+
+w@child(p)
+spin <- rotate(180, time = time(5, repeating = 1), local = TRUE)
+p@action(spin)
+
+wc <- obj_clone(w)
+anim(w)
+count <- 0L
+while (w@act()) {
+  count <- count + 1L
+  render(w)
+}

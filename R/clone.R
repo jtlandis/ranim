@@ -90,3 +90,9 @@ method(obj_clone, shape) <- function(obj) {
   }
   new_obj
 }
+
+method(obj_clone, apoly) <- function(obj) {
+  new_obj <- obj_clone(super(obj, shape))
+  new_obj@points <- obj_clone(obj@points)
+  new_obj
+}

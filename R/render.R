@@ -14,3 +14,18 @@ method(render, shape) <- function(shape) {
   }
   invisible(shape)
 }
+
+anim <- new_generic("anim", "obj", function(obj, fps = NULL) S7_dispatch())
+
+method(anim, shape) <- function(obj, fps = NULL) {
+  obj <- obj_clone(obj)
+
+  if (!is.null(fps)) {
+    obj@fps <- fps
+  }
+  start_time <- Sys.time()
+  set_action_time(obj, set_time_start(start_time))
+  while (obj@act()) {
+    render(obj)
+  }
+}

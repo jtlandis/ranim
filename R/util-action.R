@@ -38,7 +38,29 @@ action <- new_class(
     is_done = new_property(
       class = class_logical,
       getter = function(self) {
-        self@time@repeating < 0
+        self@time@is_done
+      }
+    ),
+    then = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function(next_action) {
+          if (!S7_inherits(next_action, action)) {
+            stop("next_action must be an action", call. = FALSE)
+          }
+          act_series(obj_clone(self), next_action)
+        }
+      }
+    ),
+    reset = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function() {
+          self@time@reset()
+          invisible(self)
+        }
       }
     )
   ),
@@ -68,6 +90,38 @@ act_series <- new_class(
       getter = function(self) {
         self@actions$.data
       }
+    ),
+    is_done = new_property(
+      class = class_logical,
+      getter = function(self) {
+        self@time@is_done &&
+          all(vapply(self@actions, prop, name = "is_done", logical(1)))
+      }
+    ),
+    reset = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function() {
+          self@time@reset()
+          for (action in self@actions) {
+            action@time@reset()
+          }
+          invisible(self)
+        }
+      }
+    ),
+    then = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function(next_action) {
+          if (!S7_inherits(next_action, action)) {
+            stop("next_action must be an action", call. = FALSE)
+          }
+          act_series(!!!obj_clone(self@actions), next_action)
+        }
+      }
     )
   ),
   constructor = function(...) {
@@ -79,7 +133,7 @@ act_series <- new_class(
     }
     durations <- vapply(
       dots,
-      \(x) 1 / x@time@time_scale * (x@time@repeating + 1),
+      \(x) x@time@duration * (x@time@repeating + 1),
       numeric(1)
     )
     actions <- env(
@@ -91,16 +145,36 @@ act_series <- new_class(
     new_object(
       action(
         function(obj, time) {
-          if (time@repeating >= 0) {
+          cat(sprintf("series: %s\n", format(time)))
+          actions_done <- vapply(
+            actions$.data, prop,
+            name = "is_done",
+            logical(1)
+          )
+          if (all(actions_done) && !time@is_done) {
+            # all actions are done,
+            for (action in actions$.data) {
+              action@time@reset()
+              action@time@start_time <- time@last_time - time@delta_time
+            }
+            actions$.index <- 1L
+            actions_done <- FALSE
+          }
+          if (any(!actions_done)) {
             func <- actions$.data[[actions$.index]]
             if (func@is_done) {
+              cat("Action done, moving to next\n")
               i <- actions$.index <- actions$.index + 1L
               func <- tryCatch(
-                actions.data[[i]],
+                actions$.data[[i]],
                 error = function(cnd) {
                   identity
                 }
               )
+              if (S7_inherits(func, action)) {
+                # browser()
+                func@time@start_time <- time@last_time - time@delta_time
+              }
             }
             invisible(func(obj))
           }

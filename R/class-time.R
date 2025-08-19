@@ -9,7 +9,9 @@ time <- new_class(
         self@delta_time
       }
     ),
+    iter = scalar_prop(iter),
     last_time = new_union(NULL, new_S3_class("POSIXct")),
+    start_time = new_union(NULL, new_S3_class("POSIXct")),
     time_scale = scalar_prop(time_scale),
     value = scalar_prop(value),
     delta = scalar_prop(delta),
@@ -18,7 +20,7 @@ time <- new_class(
       getter = function(self) {
         force(self)
         function() {
-          if (self@repeating < 0) {
+          if (self@is_done) {
             self@delta <- scalar(0)
             return(invisible(self))
           }
@@ -26,7 +28,7 @@ time <- new_class(
           switch(self@mode,
             time = {
               this_time <- Sys.time()
-              last_time <- self@last_time %||% this_time
+              last_time <- self@last_time %||% self@start_time %||% this_time
               delta_time <- this_time |>
                 difftime(last_time, units = "secs") |>
                 as.numeric()
@@ -39,13 +41,13 @@ time <- new_class(
             }
           )
           if (self@time >= 1) {
-            if (self@repeating > 0) {
+            if (!self@is_done) {
               self@time <- scalar(0)
               old_value <- old_value - 1
             } else {
               self@time <- scalar(1)
             }
-            self@repeating <- self@repeating - 1
+            self@iter <- self@iter + 1L
           }
           self@value <- self@ease(self@time)
           self@delta <- self@value - old_value
@@ -69,6 +71,26 @@ time <- new_class(
       }
     ),
     repeating = scalar_prop(repeating),
+    is_done = new_property(
+      class = class_logical,
+      getter = function(self) {
+        self@repeating < self@iter
+      }
+    ),
+    reset = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function() {
+          self@time <- scalar(0)
+          self@last_time <- NULL
+          self@iter <- 0L
+          self@value <- self@ease(self@time)
+          self@delta <- 0
+          invisible(self)
+        }
+      }
+    ),
     mode = new_property(
       class = class_character,
       setter = function(self, value) {
@@ -99,12 +121,32 @@ time <- new_class(
       delta = 0,
       ease = ease,
       repeating = repeating,
-      mode = mode
+      mode = mode,
+      iter = 0L
     )
   }
 )
 
 class_time <- time
+
+method(print, class_time) <- function(x, ...) {
+  cat(sprintf(
+    "<time> %s\n",
+    format(x)
+  ))
+  invisible(x)
+}
+
+method(format, class_time) <- function(x, ...) {
+  sprintf(
+    "start time: %s | last time: %s | time: %.02f%% | value: %.02f%% | repeating: %s",
+    format(x@start_time),
+    format(x@last_time),
+    100 * x@time,
+    100 * x@value,
+    format(x@repeating)
+  )
+}
 
 # ease_in_out_sine <- function(t) {
 #   -0.5 * (cos(pi * t) - 1)
