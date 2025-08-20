@@ -28,4 +28,5 @@ method(anim, shape) <- function(obj, fps = NULL) {
   while (obj@act()) {
     render(obj)
   }
+  obj
 }

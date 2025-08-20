@@ -61,7 +61,8 @@ method(obj_clone, action) <- function(obj) {
 
 method(obj_clone, act_series) <- function(obj) {
   act_series(
-    !!!lapply(obj@actions, obj_clone)
+    !!!lapply(obj@actions, obj_clone),
+    repeating = obj@time@repeating,
   )
 }
 

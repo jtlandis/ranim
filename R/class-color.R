@@ -5,7 +5,7 @@ class_color <- new_class(
     if (length(self) != 1) {
       return("color must be a single character string")
     }
-    if (substr(self, 1, 1) != "#" && !self %in% colors()) {
+    if (substr(self, 1, 1) != "#" && !self %in% grDevices::colors()) {
       return("color must be a valid color name or hex code")
     }
     NULL

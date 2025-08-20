@@ -60,7 +60,7 @@ s1 <- point(
         obj@color <- lerp_colors("pink", "black", (time@time - 0.5) / 0.5)
       }
     },
-    time = time(10, mode = "inc")
+    time = time(10)
   )
 )
 
@@ -71,15 +71,8 @@ s1@
 child(
   offset = pos(1, 1),
   point(
-    advance = function(self, time, delta) {
-      obj_rotate(self, degrees = 720 * delta, local = TRUE)
-      if (time < 0.5) {
-        self@color <- lerp_colors("cyan", "orange", time / 0.5)
-      } else {
-        self@color <- lerp_colors("orange", "cyan", (time - 0.5) / 0.5)
-      }
-    }
-  )@child(
+    advance =
+    )@child(
     offset = pos(-1, 1),
     point(
       advance = function(self, time, delta) {
@@ -92,7 +85,18 @@ child(
       }
     )
   )
-)@child(shape(), offset = pos(5, -4.1))
+)@child(shape(), offset = pos(5, -4.1))@action(
+  action(
+    function(self, time) {
+      obj_rotate(self, degrees = 720 * time@delta, local = TRUE)
+      if (time < 0.5) {
+        self@color <- lerp_colors("cyan", "orange", time@value / 0.5)
+      } else {
+        self@color <- lerp_colors("orange", "cyan", (time@va - 0.5) / 0.5)
+      }
+    }
+  )
+)
 
 render_frame(s1, -10:10, -10:10)
 
@@ -190,26 +194,35 @@ magick::image_read(img_files) |>
 
 render_frame(stuff, -1:5, -1:5)
 
+
+source("R/zzz-load.R")
+
+acts <- scale(2, time(10, ease = ease(ecubic)), recursive = FALSE)@
+then(
+  rotate(360, time(5), local = TRUE)
+)
+spin <- rotate(180, time = time(5, reapting = 1), local = TRUE)
+acts@time@repeating <- 1L
 w <- window(
   bl = pos(-1, -1),
   tr = pos(1, 1)
 )@action(
   act_series(
-    action(
-      function(obj, time) {
-        cat(sprintf("child1: %s\n", format(time)))
-        obj_scale(obj, size = 2 * time@delta, recursive = FALSE)
-      },
-      time(10, ease = ease(ecubic))
+    acts,
+    scale(-4, time = time(2, ease = ease(ecubic)), recursive = FALSE)@
+    then(
+      action(
+        \(obj, time) {
+          obj@children[[4]]@action(
+            spin@reset()
+          )
+        },
+        time = time(0)
+      )
     ),
-    action(
-      function(obj, time) {
-        cat(sprintf("child2: %s\n", format(time)))
-        obj_rotate(obj, degrees = 360 * time@delta, local = TRUE)
-      },
-      time(5)
-    )
+    repeating = 1
   )
+
 )@child(
   apoly(
     pos(-3, -3),
@@ -233,6 +246,12 @@ w <- window(
     pos(1, 1),
     pos(-1, 1),
     color = "green"
+  )@action(
+    colors(
+      colors = c("green", "steelblue", "green"),
+      2,
+      Inf
+    )
   )
 )
 
@@ -242,11 +261,14 @@ p <- point(
 )
 
 w@child(p)
-spin <- rotate(180, time = time(5, repeating = 1), local = TRUE)
+spin <- rotate(
+  degrees = 180, local = TRUE,
+  time = time(5, repeating = 1)
+)
 p@action(spin)
 
 wc <- obj_clone(w)
-anim(w)
+.w <- anim(w, fps = 100)
 count <- 0L
 while (w@act()) {
   count <- count + 1L

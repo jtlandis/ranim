@@ -5,11 +5,32 @@ ensub <- function(expr, env) {
   do.call(substitute, list(expr, env), envir = parent.frame())
 }
 
+class_expr_to <- new_union(class_name, class_call)
+
 expr_map <- new_class(
   "expr_map",
   properties = list(
-    from = class_name,
-    to = new_union(class_name, class_call),
+    from = new_property(
+      class = class_list,
+      validator = function(value) {
+        valid <- vapply(value, is.name, logical(1))
+        if (!all(valid)) {
+          return("from must be a list of class_name objects")
+        }
+        NULL
+      },
+    ),
+    to = new_property(
+      class = class_list,
+      validator = function(value) {
+        valid <- vapply(value, is.name, logical(1)) |
+          vapply(value, is.call, logical(1))
+        if (!all(valid)) {
+          return("from must be a list of class_name or class_call objects")
+        }
+        NULL
+      },
+    ),
     transform = new_property(
       class = class_function,
       getter = function(self) {
@@ -23,9 +44,9 @@ expr_map <- new_class(
       }
     )
   ),
-  constructor = function(from, to) {
-    from <- rlang::enexpr(from)
-    to <- rlang::enexpr(to)
+  constructor = function(...) {
+    to <- rlang::exprs(..., .named = TRUE, .ignore_empty = "all")
+    from <- rlang::syms(names(to))
     new_object(S7_object(), from = from, to = to)
   }
 )
@@ -124,7 +145,7 @@ act_series <- new_class(
       }
     )
   ),
-  constructor = function(...) {
+  constructor = function(..., repeating = 0) {
     dots <- rlang::list2(...)
     if (!all(
       vapply(dots, \(x) S7_inherits(x, action), logical(1))
@@ -155,7 +176,9 @@ act_series <- new_class(
             # all actions are done,
             for (action in actions$.data) {
               action@time@reset()
-              action@time@start_time <- time@last_time - time@delta_time
+              if (action@time@mode == "time") {
+                action@time@start_time <- time@last_time - time@delta_time
+              }
             }
             actions$.index <- 1L
             actions_done <- FALSE
@@ -171,7 +194,7 @@ act_series <- new_class(
                   identity
                 }
               )
-              if (S7_inherits(func, action)) {
+              if (S7_inherits(func, action) && time@mode == "time") {
                 # browser()
                 func@time@start_time <- time@last_time - time@delta_time
               }
@@ -179,7 +202,7 @@ act_series <- new_class(
             invisible(func(obj))
           }
         },
-        time = time(duration = sum(durations))
+        time = time(duration = sum(durations), repeating = repeating)
       ),
       actions = actions
     )
@@ -193,40 +216,81 @@ match_call <- function(obj) {
   call
 }
 
-get_methods <- function(generic) {
+get_methods <- function(generic, name = deparse(substitute(generic))) {
+  force(name)
   if (is.character(generic)) {
-    generic <- match.fun(generic)
+    name <- generic
   }
+  generic <- match.fun(generic)
   if (!is.function(generic)) {
     stop("generic must be a function", call. = FALSE)
   }
   UseMethod("get_methods")
 }
-get_methods.default <- function(generic) {
+get_methods.default <- function(generic, name = NULL) {
   on.exit(print(generic))
   stop("Un-reachable state for:")
 }
-# get_methods.function <- function(generic) {
-#   met <- methods(generic)
-#   `_empty_` <- function() {}
-#   out <- vector("list", length(met))
-#   info <- attr(met, "info")
-#   for (i in seq_along(out)) {
-#     if (isS4) {
+get_methods.function <- function(generic, name = NULL) {
+  met <- methods(name)
+  if (length(met) == 0) {
+    # its just a simple function
+    return(list(generic))
+  }
+  # Get method info
+  info <- attr(met, "info")
+  out <- vector("list", length(met))
 
-#     }
-#     if (!is.na(info[i, "from"])) {
-#       ns <- getNamespace(info[i, "from"])
-#       out[[i]] <- get(info[i, "generic"], envir = ns)
-#     } else {
-#       out[[i]] <- get(info[i, "generic"], envir = parent.frame())
-#     }
-#   }
-#   lapply(met, function(m) {
-#     tryCatch(match.fun(m), error = function(e) `_empty_`)
-#   }) |>
-#   Filter(function(f) !identical(f, `_empty_`), x = _)
-# }
+  # Handle both S3 and S4 methods
+  for (i in seq_along(met)) {
+    method_name <- met[i]
+
+    # Check if it's an S4 method
+    if (!is.null(info) && !is.na(info[i, "isS4"]) && info[i, "isS4"]) {
+      # S4 method - get the method definition
+      tryCatch(
+        {
+          # Extract class name from method name
+          class_name <- sub(paste0("^", info[i, "generic"], ","), "", method_name)
+          class_name <- sub("-method$", "", class_name)
+          class_sig <- strsplit(class_name, ",")[[1]]
+          out[[i]] <- getMethod(f = class_name, signature = class_sig)
+        },
+        error = function(e) {
+          out[[i]] <- NULL
+        }
+      )
+    } else {
+      # S3 method - try to get the function
+      tryCatch(
+        {
+          class_name <- sub(
+            paste0("^", info[i, "generic"], "\\."), "",
+            method_name
+          )
+          out[[i]] <- getS3method(
+            f = info[i, "generic"],
+            class = class_name
+          )
+        },
+        error = function(e) {
+          # Fallback - try to find it in global environment or search path
+          tryCatch(
+            {
+              out[[i]] <- get(method_name)
+            },
+            error = function(e2) {
+              out[[i]] <- NULL
+            }
+          )
+        }
+      )
+    }
+  }
+
+  # Filter out NULL entries and return
+  Filter(Negate(is.null), out)
+}
 
 walk_table <- function(tbl) {
   nms <- ls(tbl, all.names = TRUE)
@@ -243,12 +307,12 @@ walk_table <- function(tbl) {
   lst
 }
 
-get_methods.S7_generic <- function(generic) {
+get_methods.S7_generic <- function(generic, name = NULL) {
   walk_table(generic@methods)
 }
 
-all_formals <- function(func) {
-  methods <- get_methods(func)
+all_formals <- function(func, name) {
+  methods <- get_methods(func, name)
   lapply(methods, formals) |>
     lapply(names) |>
     Reduce(union, x = _)
@@ -261,18 +325,46 @@ all_formals <- function(func) {
 #' augmented within func().
 into_action <- function(func, remap, obj_arg = names(formals(func))[1]) {
   action_func_ <- substitute(func)
+  func_name <- as.character(action_func_)
   if (!is.function(func)) {
     stop("func must be a function", call. = FALSE)
   }
   from <- remap@from
-  valid_args <- setdiff(all_formals(func), "...")
-  action_func_ <- substitute(action_func_(obj, from, ...))
-  names(action_func_)[2] <- obj_arg
-  names(action_func_)[3] <- as.character(from)
-  force_arg_ <- substitute(force(from))
-  action_func_ <- remap@transform(!!action_func_)
+  is_captured <- Map(
+    function(from, to) {
+      do.call(
+        substitute,
+        list(
+          to,
+          rlang::list2("{from}" := quote(..1))
+        )
+      )
+    },
+    from = remap@from,
+    to = remap@to
+  ) |>
+    mapply(FUN = Negate(identical), x = _, y = remap@to)
+
+  valid_args <- setdiff(
+    all_formals(func, name = func_name),
+    c("...", names(remap@to)[!is_captured])
+  )
+
+  action_func_ <- eval(substitute(
+    rlang::expr(action_func_(
+      !!!rlang::exprs("{obj_arg}" := obj, !!!remap@to),
+      ...
+    ))
+  ))
+  # names(action_func_)[2] <- obj_arg
+  # names(action_func_)[3] <- as.character(from)
+  force_arg_ <- rlang::call2(
+    "{",
+    !!!lapply(from[is_captured], \(x) call("force", x))
+  )
+  # action_func_ <- remap@transform(!!action_func_)
   func <- substitute(
-    function(arg, time, ...) {
+    function() {
       call <- match.call(expand.dots = FALSE)
       if (is.null(call$time)) {
         stop("time argument is required", call. = FALSE)
@@ -287,6 +379,7 @@ into_action <- function(func, remap, obj_arg = names(formals(func))[1]) {
         ), call. = FALSE)
       }
       force_arg_
+      force(time)
       action(
         function(obj, time) {
           action_func_
@@ -296,8 +389,45 @@ into_action <- function(func, remap, obj_arg = names(formals(func))[1]) {
     }
   )
   func <- eval(func)
-  from_ <- alist(from = , time = , ... = )
-  names(from_)[1] <- as.character(from)
-  formals(func) <- from_
+  # from_ <- alist(from = , time = , ... = )
+  # names(from_)[1] <- as.character(from)
+  formals(func) <- rlang::pairlist2(
+    !!!lapply(remap@to[is_captured], \(x) rlang::missing_arg()),
+    time = ,
+    ... =
+    )
   func
+}
+
+method(print, action) <- function(x, indent = "", ...) {
+  cat(
+    sprintf("%s%s\n", indent, format(x))
+  )
+  invisible(x)
+}
+
+method(print, act_series) <- function(x, indent = "", ...) {
+  cat(
+    sprintf("%s<action series>\n", indent)
+  )
+  cat(
+    sprintf("%s%s\n", indent, format(x@time))
+  )
+  for (action in x@actions) {
+    print(action, indent = paste0(indent, "  "))
+  }
+  invisible(x)
+}
+
+method(format, action) <- function(x, ...) {
+  c(
+    "<action>",
+    format(substitute(func, environment(x))),
+    sprintf("Time: %s", format(x@time)),
+    if (x@time@is_done) {
+      " - done"
+    } else {
+      ""
+    }
+  )
 }

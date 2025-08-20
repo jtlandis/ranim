@@ -50,13 +50,15 @@ apoly <- new_class(
     )
   ),
   constructor = function(...,
-                         trans = transform(pos(), pos()),
+                         trans = transform(),
                          parent = NULL,
                          children = list(),
+                         actions = list(),
                          color = "black") {
     S7::new_object(shape(
       trans = trans, parent = parent,
-      children = children, color = class_color(color)
+      children = children, color = class_color(color),
+      actions = actions
     ), points = positions(...))
   }
 )

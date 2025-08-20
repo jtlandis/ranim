@@ -139,12 +139,13 @@ method(print, class_time) <- function(x, ...) {
 
 method(format, class_time) <- function(x, ...) {
   sprintf(
-    "start time: %s | last time: %s | time: %.02f%% | value: %.02f%% | repeating: %s",
+    "start: %s | now: %s | time: %.02f%% | value: %.02f%% | iter: %s/%s",
     format(x@start_time),
     format(x@last_time),
     100 * x@time,
     100 * x@value,
-    format(x@repeating)
+    format(x@iter),
+    format(x@repeating + 1L)
   )
 }
 
