@@ -94,8 +94,8 @@ action <- new_class(
       stop("func must have exactly two arguments: (obj, time)", call. = FALSE)
     }
     new_object(
-      function(obj) {
-        func(obj, time@step())
+      function(obj, delta_time) {
+        func(obj, time@step(delta_time))
       },
       time = time
     )
@@ -166,7 +166,7 @@ act_series <- new_class(
     new_object(
       action(
         function(obj, time) {
-          cat(sprintf("series: %s\n", format(time)))
+          # cat(sprintf("series: %s\n", format(time)))
           actions_done <- vapply(
             actions$.data, prop,
             name = "is_done",
@@ -176,9 +176,9 @@ act_series <- new_class(
             # all actions are done,
             for (action in actions$.data) {
               action@time@reset()
-              if (action@time@mode == "time") {
-                action@time@start_time <- time@last_time - time@delta_time
-              }
+              # if (action@time@mode == "time") {
+              #   action@time@start_time <- time@last_time - time@delta_time
+              # }
             }
             actions$.index <- 1L
             actions_done <- FALSE
@@ -186,7 +186,7 @@ act_series <- new_class(
           if (any(!actions_done)) {
             func <- actions$.data[[actions$.index]]
             if (func@is_done) {
-              cat("Action done, moving to next\n")
+              # cat("Action done, moving to next\n")
               i <- actions$.index <- actions$.index + 1L
               func <- tryCatch(
                 actions$.data[[i]],
@@ -194,12 +194,12 @@ act_series <- new_class(
                   identity
                 }
               )
-              if (S7_inherits(func, action) && time@mode == "time") {
-                # browser()
-                func@time@start_time <- time@last_time - time@delta_time
-              }
+              # if (S7_inherits(func, action) && time@mode == "time") {
+              #   # browser()
+              #   func@time@start_time <- time@last_time - time@delta_time
+              # }
             }
-            invisible(func(obj))
+            invisible(func(obj, time@delta_time))
           }
         },
         time = time(duration = sum(durations), repeating = repeating)

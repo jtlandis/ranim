@@ -121,12 +121,12 @@ shape <- new_class("shape",
       class = class_function,
       getter = function(self) {
         force(self)
-        function() {
+        function(delta_time) {
           actions <- self@actions
           to_rm <- logical(length(actions))
           for (i in seq_along(actions)) {
             action <- actions[[i]]
-            action(self)
+            action(self, delta_time)
             if (action@is_done) {
               to_rm[i] <- TRUE
             }
@@ -136,7 +136,7 @@ shape <- new_class("shape",
           }
           child_acting <- logical(length(self@children))
           for (i in seq_along(child_acting)) {
-            child_acting[i] <- self@children[[i]]@act()
+            child_acting[i] <- self@children[[i]]@act(delta_time)
           }
           invisible(length(actions) > 0 || any(child_acting))
         }

@@ -19,36 +19,41 @@ time <- new_class(
       class = class_function,
       getter = function(self) {
         force(self)
-        function() {
+        function(delta_time) {
           if (self@is_done) {
             self@delta <- scalar(0)
             return(invisible(self))
           }
           old_value <- self@value
-          switch(self@mode,
-            time = {
-              this_time <- Sys.time()
-              last_time <- self@last_time %||% self@start_time %||% this_time
-              delta_time <- this_time |>
-                difftime(last_time, units = "secs") |>
-                as.numeric()
-              self@last_time <- this_time
-              attr(self, "delta_time") <- scalar(delta_time)
-              self@time <- self@time + (self@time_scale * delta_time)
-            },
-            fps = {
-              self@time <- self@time + self@delta_time
-            }
-          )
+          self@time <- self@time + (self@time_scale * delta_time)
+          # switch(self@mode,
+          #   time = {
+          #     this_time <- Sys.time()
+          #     last_time <- self@last_time %||% self@start_time %||% this_time
+          #     delta_time <- this_time |>
+          #       difftime(last_time, units = "secs") |>
+          #       as.numeric()
+          #     self@last_time <- this_time
+          #     attr(self, "delta_time") <- scalar(delta_time)
+
+          #   },
+          #   fps = {
+          #     self@time <- self@time + self@delta_time
+          #   }
+          # )
           if (self@time >= 1) {
-            if (!self@is_done) {
-              self@time <- scalar(0)
-              old_value <- old_value - 1
+            new_delta_time <- self@time - 1
+            if (self@repeating > self@iter) {
+              # old_value becomes the new delta
+              old_value <- old_value - self@ease(scalar(1))
+              # set time to the wrapped point
+              self@time <- self@time_scale * new_delta_time
             } else {
               self@time <- scalar(1)
             }
             self@iter <- self@iter + 1L
           }
+          attr(self, "delta_time") <- scalar(delta_time)
           self@value <- self@ease(self@time)
           self@delta <- self@value - old_value
           invisible(self)

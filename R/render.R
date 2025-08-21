@@ -17,15 +17,50 @@ method(render, shape) <- function(shape) {
 
 anim <- new_generic("anim", "obj", function(obj, fps = NULL) S7_dispatch())
 
+simple_clock <- new_class(
+  "clock",
+  parent = class_env,
+  properties = list(
+    delta_time = scalar_prop(delta_time)
+  ),
+  constructor = function(delta_time = 1 / 60) {
+    S7::new_object(env(), delta_time = scalar(delta_time))
+  }
+)
+
+timed_clock <- new_class(
+  "timed_clock",
+  parent = simple_clock,
+  properties = list(
+    last_time = new_S3_class("POSIXct"),
+    delta_time = new_property(
+      class = scalar_num,
+      getter = function(self) {
+        this_time <- Sys.time()
+        delta_time <- this_time |>
+          difftime(self@last_time, units = "secs") |>
+          as.numeric() |>
+          scalar()
+        self@last_time <- this_time
+        delta_time
+      },
+    )
+  ),
+  constructor = function(last_time = Sys.time()) {
+    S7::new_object(simple_clock(delta_time = 0), last_time = last_time)
+  }
+)
+
 method(anim, shape) <- function(obj, fps = NULL) {
   obj <- obj_clone(obj)
 
-  if (!is.null(fps)) {
-    obj@fps <- fps
+  clock <- if (!is.null(fps)) {
+    simple_clock(delta_time = 1 / fps)
+  } else {
+    timed_clock()
   }
-  start_time <- Sys.time()
-  set_action_time(obj, set_time_start(start_time))
-  while (obj@act()) {
+  # set_action_time(obj, set_time_start(start_time))
+  while (obj@act(clock@delta_time)) {
     render(obj)
   }
   obj
