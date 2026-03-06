@@ -88,7 +88,17 @@ window <- new_class(
         attr(self, "fps")
       }
     )
-  )
+  ),
+  constructor = function(
+    bl, tr, trans = transform(), parent = NULL,
+    children = list(), actions = list(),
+    color = "black", fps = NULL
+  ) {
+    S7::new_object(shape(
+      trans = trans, parent = parent, children = children,
+      actions = actions, color = color
+    ), bl = new_pos(bl), tr = new_pos(tr), fps = fps)
+  }
 )
 
 method(get_positions, window) <- function(obj) {
@@ -131,14 +141,15 @@ method(
   obj_scale,
   list(window, pos)
 ) <- function(
-    obj,
-    around,
-    ...,
-    size,
-    target_size = obj_size(obj) + size,
-    scale = target_size / obj_size(obj),
-    local = FALSE,
-    recursive = TRUE) {
+  obj,
+  around,
+  ...,
+  size,
+  target_size = obj_size(obj) + size,
+  scale = target_size / obj_size(obj),
+  local = FALSE,
+  recursive = TRUE
+) {
   if (recursive) {
     for (child in obj@children) {
       child@trans@anchor <- around

@@ -20,8 +20,8 @@ transform <- new_class("transform",
   ),
   constructor = function(offset = pos(), anchor = pos()) {
     new_object(S7_object(),
-      offset = offset,
-      anchor = anchor,
+      offset = new_pos(offset),
+      anchor = new_pos(anchor),
       size = scalar(1),
       angle = scalar(0)
     )

@@ -43,3 +43,58 @@ colors <- function(colors, durations, repeating = 0) {
   }
   act_series(!!!actions, repeating = repeating)
 }
+
+spawn_from <- function(parent, child, offset = NULL) {
+  parent@child(
+    child = child,
+    offset = offset
+  )
+}
+
+spawn <- into_action(
+  spawn_from,
+  expr_map(
+    child = obj_clone(child),
+    offset = offset
+  )
+)
+
+spawn_sibling <- function(sib, time, offset = NULL) {
+  force(time)
+  if (is.null(offset)) {
+    offset <- pos()
+  }
+  action(function(obj, time) {
+    force(time)
+    parent <- obj@parent
+    spawn_from(parent, obj_clone(sib), obj_pos(obj, local = TRUE) + offset)
+  }, time = time)
+}
+
+duplicate <- function(time) {
+  force(time)
+  action(function(obj, time) {
+    force(time)
+    parent <- obj@parent
+    spawn_from(parent, obj_clone(obj))
+  }, time = time)
+}
+
+
+obj_offset <- function(obj, by) {
+  obj_translate(obj, to = obj_pos(obj) + by)
+}
+
+offset <- into_action(
+  obj_offset,
+  expr_map(
+    by = by * time@delta
+  )
+)
+
+translate <- into_action(
+  obj_translate,
+  expr_map(
+    to = (to - obj_pos(obj)) * time@value
+  )
+)

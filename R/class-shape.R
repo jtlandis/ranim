@@ -135,8 +135,9 @@ shape <- new_class("shape",
             attr(self, "actions") <- actions[!to_rm]
           }
           child_acting <- logical(length(self@children))
+          children <- self@children
           for (i in seq_along(child_acting)) {
-            child_acting[i] <- self@children[[i]]@act(delta_time)
+            child_acting[i] <- children[[i]]@act(delta_time)
           }
           invisible(length(actions) > 0 || any(child_acting))
         }

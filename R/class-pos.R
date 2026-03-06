@@ -8,6 +8,21 @@ pos <- new_class("pos",
   }
 )
 
+new_pos <- new_generic("new_pos", ".data")
+
+method(new_pos, class_numeric) <- function(.data, ...) {
+  n <- length(.data)
+  switch(n,
+    return(pos(.data, .data)),
+    return(pos(.data[1L], .data[2L]))
+  )
+  stop("new position can only be constructed from a length 1 or 2 numeric")
+}
+
+method(new_pos, pos) <- function(.data, ...) {
+  .data
+}
+
 method(format, pos) <- function(x, ...) {
   sprintf("(%s, %s)", format(x@x), format(x@y))
 }

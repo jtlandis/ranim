@@ -41,6 +41,10 @@ time <- new_class(
           #     self@time <- self@time + self@delta_time
           #   }
           # )
+
+          ## WE SHOULDNT ALLOW WRAPPING.
+          # if self@time >= 1 consider exiting with
+          # remainder time left? then restepping?
           if (self@time >= 1) {
             new_delta_time <- self@time - 1
             if (self@repeating > self@iter) {
@@ -109,6 +113,24 @@ time <- new_class(
       getter = function(self) {
         1 / self@time_scale
       }
+    ),
+    remaining = new_property(
+      class = scalar_num,
+      getter = function(self) {
+        dur <- self@duration
+        # time left on current iter
+        curr <- (1 - self@time) * dur
+        if (is.finite(reps <- self@repeating)) {
+          remaining <- reps - self@iter
+          if (remaining > 0) {
+            curr <- curr + (dur * remaining)
+          }
+        } else {
+          # cannot compute remaining time on infinite reps
+          return(scalar(Inf))
+        }
+        curr
+      }
     )
   ),
   constructor = function(duration = 1,
@@ -152,6 +174,21 @@ method(format, class_time) <- function(x, ...) {
     format(x@iter),
     format(x@repeating + 1L)
   )
+}
+
+remaining_time <- new_generic(
+  "remaining_time", "object",
+  function(object, ...) {
+    S7::S7_dispatch()
+  }
+)
+
+method(remaining_time, time) <- function(object, ..., ignore_inf = TRUE) {
+  remain <- object@remaining
+  if (ignore_inf && is.infinite(remain)) {
+    return(scalar(0))
+  }
+  remain
 }
 
 # ease_in_out_sine <- function(t) {

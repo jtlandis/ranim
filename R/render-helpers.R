@@ -10,6 +10,14 @@ method(get_positions, shape) <- function(obj) {
   positions(obj@global, !!!lst)
 }
 
+method(get_positions, pos) <- function(obj) {
+  obj
+}
+
+method(get_positions, S7::class_list) <- function(obj) {
+  lapply(obj, get_positions) |> unlist()
+}
+
 get_extent <- function(obj) {
   positions <- get_positions(obj)
   xs <- vapply(positions, \(p) S7_data(p@x), numeric(1))

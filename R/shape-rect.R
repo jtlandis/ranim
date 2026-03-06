@@ -22,6 +22,10 @@ rect <- new_class("rect",
         self@height <- scalar(value)
         self
       }
+    ),
+    border = new_property(
+      class = new_union(class_color, class_logical),
+      default = NA
     )
   )
 )
@@ -38,6 +42,27 @@ method(render, rect) <- function(shape) {
     ybottom = y - h / 2,
     xright = x + w / 2,
     ytop = y + h / 2,
-    col = shape@color
+    col = shape@color,
+    border = shape@border
   )
 }
+
+
+method(obj_scale, list(rect, pos)) <-
+  function(obj, around, ...,
+           size,
+           target_size = obj_size(obj) + size,
+           scale = target_size / obj_size(obj),
+           local = FALSE, recursive = TRUE) {
+    obj@height <- obj@height * scale
+    obj@width <- obj@width * scale
+
+    obj_scale(
+      obj = super(obj, shape),
+      around = around,
+      ...,
+      scale = scale,
+      local = local,
+      recursive = recursive
+    )
+  }

@@ -74,6 +74,18 @@ action <- new_class(
         }
       }
     ),
+    finally = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function(final_action) {
+          if (!S7_inherits(final_action, action)) {
+            stop("final_action must be an action", call. = FALSE)
+          }
+          act_series(obj_clone(self), final_action)
+        }
+      }
+    ),
     reset = new_property(
       class = class_function,
       getter = function(self) {
@@ -81,6 +93,16 @@ action <- new_class(
         function() {
           self@time@reset()
           invisible(self)
+        }
+      }
+    ),
+    repeating = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function(times) {
+          self@time@repeating <- times
+          self
         }
       }
     )
@@ -143,6 +165,18 @@ act_series <- new_class(
           act_series(!!!obj_clone(self@actions), next_action)
         }
       }
+    ),
+    finally = new_property(
+      class = class_function,
+      getter = function(self) {
+        force(self)
+        function(final_action) {
+          if (!S7_inherits(final_action, action)) {
+            stop("final_action must be an action", call. = FALSE)
+          }
+          act_series(obj_clone(self), final_action)
+        }
+      }
     )
   ),
   constructor = function(..., repeating = 0) {
@@ -166,12 +200,15 @@ act_series <- new_class(
     new_object(
       action(
         function(obj, time) {
+          force(time)
           # cat(sprintf("series: %s\n", format(time)))
           actions_done <- vapply(
             actions$.data, prop,
             name = "is_done",
             logical(1)
           )
+          browser()
+
           if (all(actions_done) && !time@is_done) {
             # all actions are done,
             for (action in actions$.data) {
@@ -183,24 +220,43 @@ act_series <- new_class(
             actions$.index <- 1L
             actions_done <- FALSE
           }
-          if (any(!actions_done)) {
-            func <- actions$.data[[actions$.index]]
-            if (func@is_done) {
-              # cat("Action done, moving to next\n")
-              i <- actions$.index <- actions$.index + 1L
-              func <- tryCatch(
-                actions$.data[[i]],
-                error = function(cnd) {
-                  identity
-                }
-              )
-              # if (S7_inherits(func, action) && time@mode == "time") {
-              #   # browser()
-              #   func@time@start_time <- time@last_time - time@delta_time
-              # }
+          curr_act <- actions$.data[[actions$.index]]
+          time_rem <- curr_act@time@remaining
+          delta_time <- time@delta_time
+          while (delta_time > 0) {
+            time_rem <- time_rem - delta_time
+            curr_act(obj, delta_time)
+            if (time_rem > 0 || actions$.index == length(actions$.data)) {
+              # we didnt have enough delta time to surpase remaining
+              # timer
+              delta_time <- 0
+            } else {
+              # we have past the timer and need to increment
+              delta_time <- -S7_data(time_rem)
+              actions$.index <- actions$.index + 1L
+              curr_act <- actions$.data[[actions$.index]]
+              time_rem <- curr_act@time@remaining
             }
-            invisible(func(obj, time@delta_time))
           }
+          # curr_act(obj, time@delta_time)
+          # if (any(!actions_done)) {
+          #   func <- actions$.data[[actions$.index]]
+          #   if (func@is_done) {
+          #     # cat("Action done, moving to next\n")
+          #     i <- actions$.index <- actions$.index + 1L
+          #     func <- tryCatch(
+          #       actions$.data[[i]],
+          #       error = function(cnd) {
+          #         function(...) ..1
+          #       }
+          #     )
+          #     # if (S7_inherits(func, action) && time@mode == "time") {
+          #     #   # browser()
+          #     #   func@time@start_time <- time@last_time - time@delta_time
+          #     # }
+          #   }
+          #   func(obj, time@delta_time)
+          # }
         },
         time = time(duration = sum(durations), repeating = repeating)
       ),
@@ -382,6 +438,7 @@ into_action <- function(func, remap, obj_arg = names(formals(func))[1]) {
       force(time)
       action(
         function(obj, time) {
+          force(time) # ensure time@step(delta_time) is evaluated
           action_func_
         },
         time = time
@@ -430,4 +487,29 @@ method(format, action) <- function(x, ...) {
       ""
     }
   )
+}
+
+
+method(remaining_time, action) <- function(object, ...) {
+  remaining_time(object@time, ...)
+}
+
+method(remaining_time, shape) <- function(object, ...) {
+  this_remaining <- if (length(object@actions)) {
+    vapply(object@actions,
+      FUN = method(remaining_time, action), FUN.VALUE = numeric(1), ...
+    ) |>
+      max() |>
+      scalar()
+  } else {
+    scalar(0)
+  }
+  children_remaining <- if (length(object@children)) {
+    vapply(object@children, FUN = method(remaining_time, shape), FUN.VALUE = numeric(1), ...) |>
+      max() |>
+      scalar()
+  } else {
+    scalar(0)
+  }
+  scalar(max(c(this_remaining, children_remaining)))
 }
