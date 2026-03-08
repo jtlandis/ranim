@@ -105,6 +105,12 @@ action <- new_class(
           self
         }
       }
+    ),
+    left = new_property(
+      class = scalar_num,
+      getter = function(self) {
+        self@time@left
+      }
     )
   ),
   constructor = function(func,
@@ -117,12 +123,71 @@ action <- new_class(
     }
     new_object(
       function(obj, delta_time) {
-        func(obj, time@step(delta_time))
+        delta_time <- delta_time - time@step(delta_time)@delta_time
+        if (delta_time > 0) {
+          browser()
+          warning(sprintf("attempted to push time past limit by %f", delta_time))
+        }
+        func(obj, time)
+        if (time@cycled) {
+          time@time <- scalar(0)
+          time@value <- time@ease(time@time)
+          time@cycled <- FALSE
+        }
+        delta_time
       },
       time = time
     )
   }
 )
+
+capture_actions <- function(actions) {
+  force(actions)
+  function(obj, time) {
+    force(time)
+    # cat(sprintf("series: %s\n", format(time)))
+    actions_done <- vapply(
+      actions$.data, prop,
+      name = "is_done",
+      logical(1)
+    )
+
+
+    if (all(actions_done) && !time@is_done) {
+      # all actions are done,
+      for (action in actions$.data) {
+        action@time@reset()
+        # if (action@time@mode == "time") {
+        #   action@time@start_time <- time@last_time - time@delta_time
+        # }
+      }
+      actions$.index <- 1L
+      actions_done <- FALSE
+    }
+    curr_act <- actions$.data[[actions$.index]]
+    # time_rem <- curr_act@time@remaining
+
+    # the time that the caller elapsed
+    delta_time <- time@delta_time
+    delta_time <- curr_act(obj, delta_time)
+    if (delta_time > 0) {
+      browser()
+      warning(sprintf("attempted to push time past limit by %f", delta_time))
+    }
+    if (curr_act@time@is_done && (
+      i <- actions$.index + 1L
+    ) <= length(actions$.data)) {
+      actions$.index <- i
+      ## maybe we don't immediately resolve things
+      # curr_act <- actions$.data[[i]]
+      # if (curr_act@time@duration == 0L) {
+      #   curr_act(obj, 0)
+      # }
+    }
+
+    delta_time
+  }
+}
 
 act_series <- new_class(
   "act_series",
@@ -177,6 +242,14 @@ act_series <- new_class(
           act_series(obj_clone(self), final_action)
         }
       }
+    ),
+    left = new_property(
+      class = scalar_num,
+      function(self) {
+        action_env <- attr(self, "actions")
+        curr_action <- action_env$.data[[action_env$.index]]
+        curr_action@left
+      }
     )
   ),
   constructor = function(..., repeating = 0) {
@@ -197,68 +270,12 @@ act_series <- new_class(
         .index = 1L
       )
     )
+    time <- time(duration = sum(durations), repeating = repeating)
+    act_series_fn <- capture_actions(actions)
     new_object(
       action(
-        function(obj, time) {
-          force(time)
-          # cat(sprintf("series: %s\n", format(time)))
-          actions_done <- vapply(
-            actions$.data, prop,
-            name = "is_done",
-            logical(1)
-          )
-          browser()
-
-          if (all(actions_done) && !time@is_done) {
-            # all actions are done,
-            for (action in actions$.data) {
-              action@time@reset()
-              # if (action@time@mode == "time") {
-              #   action@time@start_time <- time@last_time - time@delta_time
-              # }
-            }
-            actions$.index <- 1L
-            actions_done <- FALSE
-          }
-          curr_act <- actions$.data[[actions$.index]]
-          time_rem <- curr_act@time@remaining
-          delta_time <- time@delta_time
-          while (delta_time > 0) {
-            time_rem <- time_rem - delta_time
-            curr_act(obj, delta_time)
-            if (time_rem > 0 || actions$.index == length(actions$.data)) {
-              # we didnt have enough delta time to surpase remaining
-              # timer
-              delta_time <- 0
-            } else {
-              # we have past the timer and need to increment
-              delta_time <- -S7_data(time_rem)
-              actions$.index <- actions$.index + 1L
-              curr_act <- actions$.data[[actions$.index]]
-              time_rem <- curr_act@time@remaining
-            }
-          }
-          # curr_act(obj, time@delta_time)
-          # if (any(!actions_done)) {
-          #   func <- actions$.data[[actions$.index]]
-          #   if (func@is_done) {
-          #     # cat("Action done, moving to next\n")
-          #     i <- actions$.index <- actions$.index + 1L
-          #     func <- tryCatch(
-          #       actions$.data[[i]],
-          #       error = function(cnd) {
-          #         function(...) ..1
-          #       }
-          #     )
-          #     # if (S7_inherits(func, action) && time@mode == "time") {
-          #     #   # browser()
-          #     #   func@time@start_time <- time@last_time - time@delta_time
-          #     # }
-          #   }
-          #   func(obj, time@delta_time)
-          # }
-        },
-        time = time(duration = sum(durations), repeating = repeating)
+        act_series_fn,
+        time = time
       ),
       actions = actions
     )

@@ -122,24 +122,35 @@ shape <- new_class("shape",
       getter = function(self) {
         force(self)
         function(delta_time) {
-          actions <- self@actions
-          to_rm <- logical(length(actions))
-          for (i in seq_along(actions)) {
-            action <- actions[[i]]
-            action(self, delta_time)
-            if (action@is_done) {
-              to_rm[i] <- TRUE
+          # browser()
+          has_acted <- FALSE
+          while (delta_time > 0 || !has_acted) {
+            actions <- self@actions
+
+            to_rm <- logical(length(actions))
+            min_time <- min(self@left, delta_time)
+            # calling actions could spawn children
+            # cache here so that when min_time is
+            # pushed only on current children
+            children <- self@children
+            for (i in seq_along(actions)) {
+              action <- actions[[i]]
+              action(self, min_time)
+              if (action@is_done) {
+                to_rm[i] <- TRUE
+              }
             }
+            if (any(to_rm)) {
+              attr(self, "actions") <- actions[!to_rm]
+            }
+            child_acting <- FALSE
+            for (child in children) {
+              child_acting <- child@act(min_time) || child_acting
+            }
+            delta_time <- delta_time - min_time
+            has_acted <- TRUE
           }
-          if (any(to_rm)) {
-            attr(self, "actions") <- actions[!to_rm]
-          }
-          child_acting <- logical(length(self@children))
-          children <- self@children
-          for (i in seq_along(child_acting)) {
-            child_acting[i] <- children[[i]]@act(delta_time)
-          }
-          invisible(length(actions) > 0 || any(child_acting))
+          invisible(length(self@actions) > 0 || child_acting)
         }
       }
     ),
@@ -149,33 +160,17 @@ shape <- new_class("shape",
       getter = function(self) {
         self@trans@size
       }
+    ),
+    left = new_property(
+      class = scalar_num,
+      getter = function(self) {
+        min(
+          vapply(self@actions, prop, 1, name = "left"),
+          vapply(self@children, prop, 1, name = "left"),
+          Inf
+        ) |> scalar()
+      }
     )
-    # advance = new_property(
-    #   class = new_union(NULL, class_function),
-    #   default = NULL,
-    #   getter = function(self) {
-    #     force(self)
-    #     function(time, delta) {
-    #       fn <- attr(self, "advance")
-    #       if (is.function(fn)) {
-    #         fn(self, time, delta)
-    #       }
-    #       for (child in self@children) {
-    #         child@advance(time, delta)
-    #       }
-    #     }
-    #   },
-    #   setter = function(self, value) {
-    #     if (!is.null(value) && !is.function(value)) {
-    #       stop("advance must be a function or NULL", call. = FALSE)
-    #     }
-    #     if (!is.null(value) && !identical(names(formals(value)), c("self", "time", "delta"))) {
-    #       stop("advance function must have 'self', 'time', and 'delta' as arguments", call. = FALSE)
-    #     }
-    #     attr(self, "advance") <- value
-    #     invisible(self)
-    #   }
-    # )
   ),
   constructor = function(trans = transform(),
                          parent = NULL,

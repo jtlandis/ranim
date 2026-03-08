@@ -25,7 +25,13 @@ time <- new_class(
             return(invisible(self))
           }
           old_value <- self@value
-          self@time <- self@time + (self@time_scale * delta_time)
+          instant <- self@is_instant
+          if (!instant) {
+            self@time <- self@time + (self@time_scale * delta_time)
+          } else {
+            self@time <- scalar(Inf)
+          }
+
           # switch(self@mode,
           #   time = {
           #     this_time <- Sys.time()
@@ -45,16 +51,23 @@ time <- new_class(
           ## WE SHOULDNT ALLOW WRAPPING.
           # if self@time >= 1 consider exiting with
           # remainder time left? then restepping?
-          if (self@time >= 1) {
-            new_delta_time <- self@time - 1
-            if (self@repeating > self@iter) {
-              # old_value becomes the new delta
-              old_value <- old_value - self@ease(scalar(1))
-              # set time to the wrapped point
-              self@time <- self@time_scale * new_delta_time
+          if (self@time > (1 - 1e-15)) {
+            if (!instant) {
+              over_delta_time <- (self@time - 1) / self@time_scale
+              delta_time <- delta_time - over_delta_time
             } else {
-              self@time <- scalar(1)
+              delta_time <- scalar(0)
             }
+            self@time <- scalar(1)
+            # if (self@repeating > self@iter) {
+            #   # old_value becomes the new delta
+            #   old_value <- old_value - self@ease(scalar(1))
+            #   # set time to the wrapped point
+            #   self@time <- self@time_scale * new_delta_time
+            # } else {
+            #   self@time <- scalar(1)
+            # }
+            self@cycled <- TRUE
             self@iter <- self@iter + 1L
           }
           attr(self, "delta_time") <- scalar(delta_time)
@@ -114,22 +127,33 @@ time <- new_class(
         1 / self@time_scale
       }
     ),
+    left = new_property(
+      class = scalar_num,
+      getter = function(self) {
+        (1 - self@time) * self@duration
+      }
+    ),
     remaining = new_property(
       class = scalar_num,
       getter = function(self) {
-        dur <- self@duration
-        # time left on current iter
-        curr <- (1 - self@time) * dur
+        curr <- self@left
         if (is.finite(reps <- self@repeating)) {
           remaining <- reps - self@iter
           if (remaining > 0) {
-            curr <- curr + (dur * remaining)
+            curr <- curr + (self@duration * remaining)
           }
         } else {
           # cannot compute remaining time on infinite reps
           return(scalar(Inf))
         }
         curr
+      }
+    ),
+    cycled = class_logical,
+    is_instant = new_property(
+      class = class_logical,
+      getter = function(self) {
+        is.infinite(self@time_scale)
       }
     )
   ),
@@ -149,7 +173,8 @@ time <- new_class(
       ease = ease,
       repeating = repeating,
       mode = mode,
-      iter = 0L
+      iter = 0L,
+      cycled = FALSE
     )
   }
 )
@@ -166,9 +191,9 @@ method(print, class_time) <- function(x, ...) {
 
 method(format, class_time) <- function(x, ...) {
   sprintf(
-    "start: %s | now: %s | time: %.02f%% | value: %.02f%% | iter: %s/%s",
-    format(x@start_time),
-    format(x@last_time),
+    "remaining: %.02f | left: %.02f | time: %.02f%% | value: %.02f%% | iter: %s/%s",
+    x@remaining,
+    x@left,
     100 * x@time,
     100 * x@value,
     format(x@iter),
