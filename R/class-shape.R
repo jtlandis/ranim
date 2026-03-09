@@ -277,3 +277,28 @@ method(obj_pos, shape) <- function(obj, local = FALSE) {
     obj@global
   }
 }
+
+
+method(remaining_time, action) <- function(object, ...) {
+  remaining_time(object@time, ...)
+}
+
+method(remaining_time, shape) <- function(object, ...) {
+  this_remaining <- if (length(object@actions)) {
+    vapply(object@actions,
+      FUN = method(remaining_time, action), FUN.VALUE = numeric(1), ...
+    ) |>
+      max() |>
+      scalar()
+  } else {
+    scalar(0)
+  }
+  children_remaining <- if (length(object@children)) {
+    vapply(object@children, FUN = method(remaining_time, shape), FUN.VALUE = numeric(1), ...) |>
+      max() |>
+      scalar()
+  } else {
+    scalar(0)
+  }
+  scalar(max(c(this_remaining, children_remaining)))
+}

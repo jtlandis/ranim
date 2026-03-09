@@ -166,7 +166,7 @@ capture_actions <- function(actions) {
     delta_time <- time@delta_time
     delta_time <- curr_act(obj, delta_time)
 
-    if (curr_act@is_done) {
+    while (curr_act@is_done) {
       if ((i <- actions$.index + 1L) <= length(actions$.data)) {
         # next index is within range of actions
         actions$.index <- i
@@ -177,6 +177,13 @@ capture_actions <- function(actions) {
           action@time@reset()
         }
         actions$.index <- 1L
+      } else {
+        # we know all other actions are done, and this timer is done
+        break
+      }
+      curr_act <- actions$.data[[actions$.index]]
+      if (curr_act@time@is_instant) {
+        curr_act(obj, 0)
       }
     }
     delta_time
@@ -501,29 +508,4 @@ method(format, action) <- function(x, ...) {
       ""
     }
   )
-}
-
-
-method(remaining_time, action) <- function(object, ...) {
-  remaining_time(object@time, ...)
-}
-
-method(remaining_time, shape) <- function(object, ...) {
-  this_remaining <- if (length(object@actions)) {
-    vapply(object@actions,
-      FUN = method(remaining_time, action), FUN.VALUE = numeric(1), ...
-    ) |>
-      max() |>
-      scalar()
-  } else {
-    scalar(0)
-  }
-  children_remaining <- if (length(object@children)) {
-    vapply(object@children, FUN = method(remaining_time, shape), FUN.VALUE = numeric(1), ...) |>
-      max() |>
-      scalar()
-  } else {
-    scalar(0)
-  }
-  scalar(max(c(this_remaining, children_remaining)))
 }
