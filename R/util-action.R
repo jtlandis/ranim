@@ -123,8 +123,13 @@ action <- new_class(
     }
     new_object(
       function(obj, delta_time) {
-        delta_time <- delta_time - time@step(delta_time)@delta_time
+        # odt <- delta_time
+        # ot <- obj_clone(time)
+        delta_time <- enforce_zero(
+          delta_time, time@step(delta_time)@delta_time
+        )
         if (delta_time > 1e-15) {
+          # browser()
           warning(sprintf("attempted to push time past limit by %.04f", delta_time))
         }
         func(obj, time)
@@ -139,6 +144,14 @@ action <- new_class(
     )
   }
 )
+
+enforce_zero <- function(old_dt, new_dt) {
+  val <- old_dt - new_dt
+  if (abs(val) < 1e-12) {
+    val <- 0
+  }
+  val
+}
 
 capture_actions <- function(actions) {
   force(actions)

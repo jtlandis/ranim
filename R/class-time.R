@@ -1,3 +1,5 @@
+one_tol <- 1 - 1e-12
+
 time <- new_class(
   "time",
   parent = class_env,
@@ -22,10 +24,12 @@ time <- new_class(
         function(delta_time) {
           if (self@is_done) {
             self@delta <- scalar(0)
+            attr(self, "delta_time") <- scalar(0)
             return(invisible(self))
           }
           old_value <- self@value
           instant <- self@is_instant
+          delta_left <- self@left
           if (!instant) {
             self@time <- self@time + (self@time_scale * delta_time)
           } else {
@@ -51,12 +55,9 @@ time <- new_class(
           ## WE SHOULDNT ALLOW WRAPPING.
           # if self@time >= 1 consider exiting with
           # remainder time left? then restepping?
-          if (self@time > (1 - 1e-15)) {
+          if (self@time >= one_tol) {
             if (!instant) {
-              over_delta_time <- (self@time - 1) / self@time_scale
-              delta_time <- delta_time - over_delta_time
-            } else {
-              delta_time <- scalar(0)
+              delta_time <- delta_left
             }
             self@time <- scalar(1)
             # if (self@repeating > self@iter) {
