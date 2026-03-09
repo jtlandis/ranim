@@ -64,10 +64,10 @@ window <- new_class(
   "window",
   parent = shape,
   properties = list(
-    bl = pos,
-    tr = pos,
+    bl = scalar_pos_prop,
+    tr = scalar_pos_prop,
     fps = new_property(
-      class = new_union(NULL, scalar_num),
+      class = new_union(NULL, class_numeric),
       default = NULL,
       setter = function(self, value) {
         if (!is.null(value) && (!is.numeric(value) ||
@@ -92,12 +92,16 @@ window <- new_class(
   constructor = function(
     bl, tr, trans = transform(), parent = NULL,
     children = list(), actions = list(),
-    color = "black", fps = NULL
+    color = "#ffffff00", fps = NULL
   ) {
-    S7::new_object(shape(
-      trans = trans, parent = parent, children = children,
-      actions = actions, color = color
-    ), bl = new_pos(bl), tr = new_pos(tr), fps = fps)
+    S7::new_object(
+      shape(
+        trans = trans, parent = parent, children = children,
+        actions = actions, color = color
+      ),
+      bl = vctrs::vec_cast(bl, new_raw_pos()),
+      tr = vctrs::vec_cast(tr, new_raw_pos()), fps = fps
+    )
   }
 )
 
@@ -107,12 +111,12 @@ method(get_positions, window) <- function(obj) {
 
 #' if recursive is TRUE, rotate all children
 #' if recursive is FLASE, only rotate the window
-method(obj_rotate, list(window, pos)) <- function(obj, around,
-                                                  ...,
-                                                  radians = degrees * pi / 180,
-                                                  degrees = radians * 180 / pi,
-                                                  local = FALSE,
-                                                  recursive = TRUE) {
+method(obj_rotate, list(window, class_pos)) <- function(obj, around,
+                                                        ...,
+                                                        radians = degrees * pi / 180,
+                                                        degrees = radians * 180 / pi,
+                                                        local = FALSE,
+                                                        recursive = TRUE) {
   if (recursive) {
     for (child in obj@children) {
       child@trans@anchor <- around
@@ -139,7 +143,7 @@ method(obj_rotate, list(window, pos)) <- function(obj, around,
 
 method(
   obj_scale,
-  list(window, pos)
+  list(window, class_pos)
 ) <- function(
   obj,
   around,

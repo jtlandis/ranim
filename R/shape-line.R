@@ -13,12 +13,14 @@ arrow <- new_class(
       }
     ),
     length = new_property(
-      class = scalar_num,
-      default = scalar(0.15)
+      class = class_numeric,
+      default = 0.15,
+      validator = scalar_num_prop$validator
     ),
     angle = new_property(
-      class = scalar_num,
-      default = scalar(45)
+      class = class_numeric,
+      default = 45,
+      validator = scalar_num_prop$validator
     )
   )
 )
@@ -60,7 +62,7 @@ line <- new_class(
   "line",
   parent = shape,
   properties = list(
-    points = positions,
+    points = class_pos,
     stroke = stroke_prop,
     weight = new_property(
       class = S7::class_numeric,
@@ -97,11 +99,10 @@ dist0 <- function(x0, x1, y0, y1) {
 method(render, line) <- function(shape) {
   pos <- shape@global
   pts <- shape@points
-  xs <- vapply(pts, function(p) S7_data(p@x), numeric(1))
-  ys <- vapply(pts, function(p) S7_data(p@y), numeric(1))
+  points <- pos + pts
   vals <- graphics::xspline(
-    x = xs + S7_data(pos@x),
-    y = ys + S7_data(pos@y),
+    x = vctrs::field(points, "x"),
+    y = vctrs::field(points, "y"),
     shape = shape@weight,
     draw = FALSE
   )
@@ -188,7 +189,7 @@ render_arrow <- function(arr, vals, shape) {
   )
 }
 
-method(obj_scale, list(line, pos)) <-
+method(obj_scale, list(line, class_pos)) <-
   function(obj, around, ...,
            size,
            target_size = obj_size(obj) + size,
@@ -211,7 +212,7 @@ method(obj_scale, list(line, pos)) <-
     )
   }
 
-method(obj_rotate, list(line, pos)) <-
+method(obj_rotate, list(line, class_pos)) <-
   function(obj, around,
            ...,
            radians = degrees * pi / 180,

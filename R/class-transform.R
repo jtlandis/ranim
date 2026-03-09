@@ -1,29 +1,29 @@
 transform <- new_class("transform",
   properties = list(
-    anchor = pos,
-    offset = pos,
+    anchor = scalar_pos_prop,
+    offset = scalar_pos_prop,
     global = new_property(
-      class = pos,
+      class = class_pos,
       getter = function(self) {
         self@anchor + self@offset
       },
       setter = function(self, value) {
-        if (!S7_inherits(value, pos)) {
+        if (!is_scalar_pos(value)) {
           stop("value must be a pos object", call. = FALSE)
         }
         self@offset <- value - self@anchor
         invisible(self)
       }
     ),
-    size = scalar_num,
-    angle = scalar_num
+    size = scalar_num_prop,
+    angle = scalar_num_prop
   ),
-  constructor = function(offset = pos(), anchor = pos()) {
+  constructor = function(offset = pos(0), anchor = pos(0)) {
     new_object(S7_object(),
       offset = new_pos(offset),
       anchor = new_pos(anchor),
-      size = scalar(1),
-      angle = scalar(0)
+      size = 1,
+      angle = 0
     )
   }
 )

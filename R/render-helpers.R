@@ -5,28 +5,61 @@ get_positions <- new_generic(
 )
 
 method(get_positions, shape) <- function(obj) {
-  lst <- lapply(obj@children, get_positions) |>
-    unlist()
-  positions(obj@global, !!!lst)
+  pos <- get_positions(obj@children)
+  vctrs::vec_c(obj@global, pos, .ptype = new_raw_pos())
 }
 
-method(get_positions, pos) <- function(obj) {
+method(get_positions, class_pos) <- function(obj) {
   obj
 }
 
 method(get_positions, S7::class_list) <- function(obj) {
-  lapply(obj, get_positions) |> unlist()
+  vctrs::list_unchop(lapply(obj, get_positions), ptype = new_raw_pos())
+}
+
+method(get_positions, rect) <- function(obj) {
+  pos <- obj@global
+  x <- vctrs::field(pos, "x")
+  y <- vctrs::field(pos, "y")
+  w <- obj@width / 2
+  h <- obj@height / 2
+  pos(c(x + w, x - w), c(y + h, y - h))
 }
 
 get_extent <- function(obj) {
   positions <- get_positions(obj)
-  xs <- vapply(positions, \(p) S7_data(p@x), numeric(1))
-  ys <- vapply(positions, \(p) S7_data(p@y), numeric(1))
+  xs <- vctrs::field(positions, "x")
+  ys <- vctrs::field(positions, "y")
 
   list(
     xlim = range(xs),
     ylim = range(ys)
   )
+}
+
+center <- function(obj) {
+  extent <- get_extent(obj)
+  pos(mean(extent$xlim), mean(extent$ylim))
+}
+
+tl <- function(obj) {
+  extent <- get_extent(obj)
+  pos(extent$xlim[1], extent$ylim[2])
+}
+
+tr <- function(obj) {
+  extent <- get_extent(obj)
+  pos(extent$xlim[2], extent$ylim[2])
+}
+
+bl <- function(obj) {
+  extent <- get_extent(obj)
+  pos(extent$xlim[1], extent$ylim[1])
+}
+
+br <- function(obj) {
+  extent <- get_extent(obj)
+  pos(extent$xlim[2], extent$ylim[1])
 }
 
 plot_cords <- function(x = NULL, y = NULL, shape) {

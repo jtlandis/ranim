@@ -107,7 +107,7 @@ action <- new_class(
       }
     ),
     left = new_property(
-      class = scalar_num,
+      class = class_numeric,
       getter = function(self) {
         self@time@left
       }
@@ -134,7 +134,7 @@ action <- new_class(
         }
         func(obj, time)
         if (time@cycled && !time@is_done) {
-          time@time <- scalar(0)
+          time@time <- 0
           time@value <- time@ease(time@time)
           time@cycled <- FALSE
         }
@@ -245,7 +245,7 @@ act_series <- new_class(
       }
     ),
     left = new_property(
-      class = scalar_num,
+      class = class_numeric,
       function(self) {
         action_env <- attr(self, "actions")
         curr_action <- action_env$.data[[action_env$.index]]

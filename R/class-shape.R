@@ -39,7 +39,7 @@ shape <- new_class("shape",
       }
     ),
     global = new_property(
-      class = pos,
+      class = class_pos,
       getter = function(self) {
         self@trans@global
       }
@@ -63,7 +63,7 @@ shape <- new_class("shape",
             stop("`child` must be a shape object", call. = FALSE)
           }
           if (!is.null(offset)) {
-            if (!S7_inherits(offset, pos)) {
+            if (!is_scalar_pos(offset)) {
               stop("`offset` should be NULL or a pos")
             }
             child@parent <- self
@@ -158,19 +158,19 @@ shape <- new_class("shape",
     ),
     color = class_color,
     size = new_property(
-      class = scalar_num,
+      class = class_numeric,
       getter = function(self) {
         self@trans@size
       }
     ),
     left = new_property(
-      class = scalar_num,
+      class = class_numeric,
       getter = function(self) {
         min(
           vapply(self@actions, prop, 1, name = "left"),
           vapply(self@children, prop, 1, name = "left"),
           Inf
-        ) |> scalar()
+        )
       }
     )
   ),
@@ -288,17 +288,15 @@ method(remaining_time, shape) <- function(object, ...) {
     vapply(object@actions,
       FUN = method(remaining_time, action), FUN.VALUE = numeric(1), ...
     ) |>
-      max() |>
-      scalar()
+      max()
   } else {
-    scalar(0)
+    0
   }
   children_remaining <- if (length(object@children)) {
     vapply(object@children, FUN = method(remaining_time, shape), FUN.VALUE = numeric(1), ...) |>
-      max() |>
-      scalar()
+      max()
   } else {
-    scalar(0)
+    0
   }
-  scalar(max(c(this_remaining, children_remaining)))
+  max(this_remaining, children_remaining)
 }

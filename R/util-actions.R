@@ -51,32 +51,55 @@ spawn_from <- function(parent, child, offset = NULL) {
   )
 }
 
-spawn <- into_action(
-  spawn_from,
-  expr_map(
-    child = obj_clone(child),
-    offset = offset
+spawn <- function(obj, time) {
+  time <- new_time(time)
+  obj_to_clone <- obj
+  action(
+    time = time,
+    function(obj, time) {
+      if (time@is_done) {
+        spawn_from(parent = obj, child = obj_clone(obj_to_clone))
+      }
+    }
   )
-)
+}
+
+despawn <- function(time = 0) {
+  time <- new_time(time)
+  action(
+    function(obj, time) {
+      if (time@is_done) {
+        obj@parent <- NULL
+      }
+    },
+    time = time
+  )
+}
 
 spawn_sibling <- function(sib, time, offset = NULL) {
   force(time)
+  time <- new_time(time)
   if (is.null(offset)) {
-    offset <- pos()
+    offset <- pos(0)
   }
   action(function(obj, time) {
     force(time)
-    parent <- obj@parent
-    spawn_from(parent, obj_clone(sib), obj_pos(obj, local = TRUE) + offset)
+    if (time@is_done) {
+      parent <- obj@parent
+      spawn_from(parent, obj_clone(sib), obj_pos(obj, local = TRUE) + offset)
+    }
   }, time = time)
 }
 
 duplicate <- function(time) {
   force(time)
+  time <- new_time(time)
   action(function(obj, time) {
     force(time)
-    parent <- obj@parent
-    spawn_from(parent, obj_clone(obj))
+    if (time@is_done) {
+      parent <- obj@parent
+      spawn_from(parent, obj_clone(obj))
+    }
   }, time = time)
 }
 
@@ -92,9 +115,32 @@ offset <- into_action(
   )
 )
 
-translate <- into_action(
-  obj_translate,
-  expr_map(
-    to = (to - obj_pos(obj)) * time@value
+translate <- function(to, time) {
+  time <- new_time(time)
+  to <- new_pos(to)
+  action(
+    function(obj, time) {
+      force(time)
+      if (is.null(time$from)) {
+        time$from <- obj_pos(obj)
+      }
+      from <- time$from
+      offset <- to - from
+      obj_translate(obj = obj, to = from + (offset * time@value))
+    },
+    time = time
   )
-)
+}
+
+
+scale2 <- function(size, time) {
+  time <- new_time(time)
+  action(function(obj, time) {
+    force(time)
+    if (is.null(time$from)) {
+      time$from <- obj_size(obj)
+    }
+    from <- time$from
+    obj_scale(obj = obj, target_size = from + (size * time@value))
+  }, time = time)
+}

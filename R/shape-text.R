@@ -34,8 +34,8 @@ text <- new_class(
   parent = shape,
   properties = list(
     label = label_prop,
-    hadj = scalar_num,
-    vadj = scalar_num,
+    hadj = scalar_num_prop,
+    vadj = scalar_num_prop,
     font = font_prop
   ),
   constructor = function(
@@ -55,8 +55,8 @@ text <- new_class(
         actions = actions, color = color
       ),
       label = label,
-      hadj = scalar(hadj),
-      vadj = scalar(vadj),
+      hadj = hadj,
+      vadj = vadj,
       font = font,
       family = new_property(
         class = new_union(NULL, class_character),
@@ -75,9 +75,11 @@ text <- new_class(
 
 method(render, text) <- function(shape) {
   trans <- shape@trans
+  pos <- trans@global
+
   text(
-    x = trans@pos@x,
-    y = trans@pos@y,
+    x = vctrs::field(pos, "x"),
+    y = vctrs::field(pos, "y"),
     labels = shape@label,
     cex = trans@size,
     srt = trans@angle,

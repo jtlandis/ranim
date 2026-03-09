@@ -1,19 +1,37 @@
+calc_duration <- function(obj) {
+  obj <- obj_clone(obj)
+  time_step <- obj@left
+  i <- 0
+  while (obj@act(time_step)) {
+    i <- i + time_step
+    time_step <- obj@left
+  }
+  i
+}
+
 render_gif <- function(
   obj, file, fps = 100, keep_frames = FALSE,
   quite = FALSE,
   width = 6, height = 4, units = "in",
-  dpi = 100
+  dpi = 100,
+  loop = 0,
+  clone = TRUE
 ) {
-  obj <- obj_clone(obj)
+  if (clone) {
+    obj <- obj_clone(obj)
+  }
 
   clock <- simple_clock(delta_time = 1 / fps)
 
   tmp <- tempdir(TRUE)
-  full_dur <- remaining_time(obj)
+  full_dur <- calc_duration(obj)
   total_frames <- fps * full_dur
   nzero <- floor(log10(total_frames)) + 1L
   template <- sprintf("%s/frame_%%0%ii.png", tmp, nzero)
-  report_template <- sprintf("rendering frame %%0%ii/%i\r", nzero, total_frames)
+  report_template <- sprintf(
+    "rendering frame %%0%ii/%i\r",
+    nzero, as.integer(total_frames)
+  )
   if (!keep_frames) {
     on.exit(file.remove(img_files))
   } else {
@@ -36,7 +54,7 @@ render_gif <- function(
   )
 
   magick::image_read(img_files) |>
-    magick::image_animate(fps = fps) |>
+    magick::image_animate(fps = fps, loop = loop) |>
     magick::image_write(file)
   if (!quite) cat(" done!\n")
   invisible(obj)

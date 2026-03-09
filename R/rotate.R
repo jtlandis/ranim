@@ -45,7 +45,7 @@ method(
 
 method(
   obj_rotate,
-  list(transform, pos)
+  list(transform, class_pos)
 ) <-
   function(obj, around,
            ...,
@@ -71,8 +71,8 @@ rotate_trans <- function(trans, around, radians, local = FALSE) {
 rotate_local_pos <- function(obj, radians) {
   cosa <- cos(radians)
   sina <- sin(radians)
-  xp <- S7_data(obj@x)
-  yp <- S7_data(obj@y)
+  xp <- vctrs::field(obj, "x")
+  yp <- vctrs::field(obj, "y")
   pos(
     xp * cosa - yp * sina,
     xp * sina + yp * cosa
@@ -84,8 +84,7 @@ rotate_pos_around_pos <- function(obj, around, radians) {
 }
 
 
-
-method(obj_rotate, list(shape, pos)) <-
+method(obj_rotate, list(shape, class_pos)) <-
   function(obj, around,
            ...,
            radians = degrees * pi / 180,

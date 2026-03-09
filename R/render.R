@@ -23,10 +23,10 @@ simple_clock <- new_class(
   "clock",
   parent = class_env,
   properties = list(
-    delta_time = scalar_prop(delta_time)
+    delta_time = scalar_num_prop
   ),
   constructor = function(delta_time = 1 / 60) {
-    S7::new_object(env(), delta_time = scalar(delta_time))
+    S7::new_object(env(), delta_time = delta_time)
   }
 )
 
@@ -36,13 +36,12 @@ timed_clock <- new_class(
   properties = list(
     last_time = new_S3_class("POSIXct"),
     delta_time = new_property(
-      class = scalar_num,
+      class = class_numeric,
       getter = function(self) {
         this_time <- Sys.time()
         delta_time <- this_time |>
           difftime(self@last_time, units = "secs") |>
-          as.numeric() |>
-          scalar()
+          as.numeric()
         self@last_time <- this_time
         delta_time
       },

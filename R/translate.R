@@ -25,7 +25,7 @@ method(
 
 method(
   obj_translate,
-  list(transform, pos)
+  list(transform, class_pos)
 ) <-
   function(obj, to,
            ...,
@@ -44,7 +44,7 @@ translate_trans <- function(trans, to, local = FALSE) {
 }
 
 
-method(obj_translate, list(shape, pos)) <-
+method(obj_translate, list(shape, class_pos)) <-
   function(obj, to,
            ...,
            local = FALSE) {

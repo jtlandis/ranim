@@ -1,28 +1,8 @@
 rect <- new_class("rect",
   parent = shape,
   properties = list(
-    width = new_property(
-      class = scalar_num,
-      default = scalar(1),
-      getter = function(self) {
-        self@width
-      },
-      setter = function(self, value) {
-        self@width <- scalar(value)
-        self
-      }
-    ),
-    height = new_property(
-      class = scalar_num,
-      default = scalar(1),
-      getter = function(self) {
-        self@height
-      },
-      setter = function(self, value) {
-        self@height <- scalar(value)
-        self
-      }
-    ),
+    width = scalar_num_prop,
+    height = scalar_num_prop,
     border = new_property(
       class = new_union(class_color, class_logical),
       default = NA
@@ -33,22 +13,29 @@ rect <- new_class("rect",
 
 method(render, rect) <- function(shape) {
   pos <- shape@global
-  x <- S7_data(pos@x)
-  y <- S7_data(pos@y)
-  w <- S7_data(shape@width)
-  h <- S7_data(shape@height)
+  x <- vctrs::field(pos, "x")
+  y <- vctrs::field(pos, "y")
+  w <- shape@width / 2
+  h <- shape@height / 2
   graphics::rect(
-    xleft = x - w / 2,
-    ybottom = y - h / 2,
-    xright = x + w / 2,
-    ytop = y + h / 2,
+    xleft = x - w,
+    ybottom = y - h,
+    xright = x + w,
+    ytop = y + h,
     col = shape@color,
     border = shape@border
   )
+
+  if (length(shape@children)) {
+    for (child in shape@children) {
+      render(child)
+    }
+  }
+  invisible(shape)
 }
 
 
-method(obj_scale, list(rect, pos)) <-
+method(obj_scale, list(rect, class_pos)) <-
   function(obj, around, ...,
            size,
            target_size = obj_size(obj) + size,

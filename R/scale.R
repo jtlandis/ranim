@@ -53,14 +53,15 @@ method(
   obj_scale,
   list(class_any, class_missing)
 ) <- function(
-    obj,
-    around,
-    ...,
-    size,
-    target_size = obj_size(obj) + size,
-    scale = target_size / obj_size(obj),
-    local = FALSE,
-    recursive = TRUE) {
+  obj,
+  around,
+  ...,
+  size,
+  target_size = obj_size(obj) + size,
+  scale = target_size / obj_size(obj),
+  local = FALSE,
+  recursive = TRUE
+) {
   obj_scale(
     obj = obj,
     around = obj_pos(obj),
@@ -73,15 +74,16 @@ method(
 
 method(
   obj_scale,
-  list(transform, pos)
+  list(transform, class_pos)
 ) <- function(
-    obj,
-    around,
-    ...,
-    size,
-    target_size = obj_size(obj) + size,
-    scale = target_size / obj_size(obj),
-    local = FALSE) {
+  obj,
+  around,
+  ...,
+  size,
+  target_size = obj_size(obj) + size,
+  scale = target_size / obj_size(obj),
+  local = FALSE
+) {
   scale_trans(
     trans = obj,
     around = around,
@@ -92,16 +94,17 @@ method(
 
 method(
   obj_scale,
-  list(shape, pos)
+  list(shape, class_pos)
 ) <- function(
-    obj,
-    around,
-    ...,
-    size,
-    target_size = obj_size(obj) + size,
-    scale = target_size / obj_size(obj),
-    local = FALSE,
-    recursive = TRUE) {
+  obj,
+  around,
+  ...,
+  size,
+  target_size = obj_size(obj) + size,
+  scale = target_size / obj_size(obj),
+  local = FALSE,
+  recursive = TRUE
+) {
   obj@trans <- scale_trans(
     trans = obj@trans,
     around = around,
@@ -172,7 +175,6 @@ scale_points_from_pos <- function(pts, scale, pos) {
 #   "obj",
 #   function(obj, target_size, scale, ...) S7_dispatch()
 # )
-
 
 
 # method(obj_scale, list(transform, pos)) <-
