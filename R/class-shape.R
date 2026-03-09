@@ -122,7 +122,6 @@ shape <- new_class("shape",
       getter = function(self) {
         force(self)
         function(delta_time) {
-          # browser()
           has_acted <- FALSE
           while (delta_time > 0 || !has_acted) {
             actions <- self@actions
@@ -140,11 +139,14 @@ shape <- new_class("shape",
                 to_rm[i] <- TRUE
               }
             }
+
             if (any(to_rm)) {
               attr(self, "actions") <- actions[!to_rm]
             }
             child_acting <- FALSE
-            for (child in children) {
+            for (i in seq_along(children)) {
+              child <- children[[i]]
+
               child_acting <- child@act(min_time) || child_acting
             }
             delta_time <- delta_time - min_time
@@ -226,6 +228,33 @@ method(obj_size, shape) <- function(obj) {
 
 method(obj_anchor, shape) <- function(obj) {
   obj@trans@anchor
+}
+
+should_browse <- function(obj) {
+  if (length(obj@children) == 0) {
+    return(FALSE)
+  }
+  child <- obj@children[[1L]]
+  if (length(actions <- child@actions) == 0) {
+    return(FALSE)
+  }
+  actions <- actions[[1]]
+  if (!S7_inherits(actions, act_series)) {
+    return(FALSE)
+  }
+  actions <- actions@actions[[1]]
+  if (!S7_inherits(actions, act_series)) {
+    return(FALSE)
+  }
+  actions <- actions@actions
+  if (length(actions) != 3L) {
+    return(FALSE)
+  }
+  act <- actions[[3]]
+  if (!S7_inherits(act, action)) {
+    return(FALSE)
+  }
+  act@time@cycled
 }
 
 update_trans <- function(self) {

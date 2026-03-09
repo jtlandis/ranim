@@ -109,6 +109,7 @@ time <- new_class(
           self@iter <- 0L
           self@value <- self@ease(self@time)
           self@delta <- 0
+          self@cycled <- FALSE
           invisible(self)
         }
       }

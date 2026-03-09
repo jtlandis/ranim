@@ -15,6 +15,8 @@ method(render, shape) <- function(shape) {
   invisible(shape)
 }
 
+.env <- new.env(parent = emptyenv())
+
 anim <- new_generic("anim", "obj", function(obj, fps = NULL) S7_dispatch())
 
 simple_clock <- new_class(
@@ -53,7 +55,7 @@ timed_clock <- new_class(
 
 method(anim, shape) <- function(obj, fps = NULL) {
   obj <- obj_clone(obj)
-
+  .env$.last_anim <- obj
   clock <- if (!is.null(fps)) {
     simple_clock(delta_time = 1 / fps)
   } else {

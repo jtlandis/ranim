@@ -42,6 +42,27 @@ method(obj_clone, class_env) <- function(obj) {
   }
 }
 
+method(obj_clone, time) <- function(obj) {
+  s7_class <- S7_class(obj)
+  frmls <- formals(s7_class)
+  lst <- names(frmls) |>
+    lapply(function(x, obj) obj_clone(prop(obj, x)), obj = obj)
+  new_obj <- do.call(
+    s7_class,
+    lst
+  )
+  nms <- ls(obj, all.names = TRUE)
+  for (nm in nms) {
+    new_obj[[nm]] <- obj_clone(obj[[nm]])
+  }
+  at <- attributes(obj)
+  at <- at[-match(names(at), c("class", "S7_class"), nomatch = 0L)]
+  for (nm in names(at)) {
+    attr(new_obj, nm) <- obj_clone(at[[nm]])
+  }
+  new_obj
+}
+
 method(obj_clone, action) <- function(obj) {
   enclose <- new.env(parent = emptyenv())
   time <- obj_clone(obj@time)
@@ -60,10 +81,17 @@ method(obj_clone, action) <- function(obj) {
 }
 
 method(obj_clone, act_series) <- function(obj) {
-  act_series(
+  new_act <- act_series(
     !!!lapply(obj@actions, obj_clone),
     repeating = obj@time@repeating,
   )
+  at <- attributes(obj@time)
+  at <- at[-match(names(at), c("class", "S7_class"), nomatch = 0L)]
+  new_t <- new_act@time
+  for (nm in names(at)) {
+    attr(new_t, nm) <- obj_clone(at[[nm]])
+  }
+  new_act
 }
 
 

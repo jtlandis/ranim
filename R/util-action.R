@@ -124,12 +124,11 @@ action <- new_class(
     new_object(
       function(obj, delta_time) {
         delta_time <- delta_time - time@step(delta_time)@delta_time
-        if (delta_time > 0) {
-          browser()
-          warning(sprintf("attempted to push time past limit by %f", delta_time))
+        if (delta_time > 1e-15) {
+          warning(sprintf("attempted to push time past limit by %.04f", delta_time))
         }
         func(obj, time)
-        if (time@cycled) {
+        if (time@cycled && !time@is_done) {
           time@time <- scalar(0)
           time@value <- time@ease(time@time)
           time@cycled <- FALSE
@@ -146,45 +145,27 @@ capture_actions <- function(actions) {
   function(obj, time) {
     force(time)
     # cat(sprintf("series: %s\n", format(time)))
-    actions_done <- vapply(
-      actions$.data, prop,
-      name = "is_done",
-      logical(1)
-    )
 
-
-    if (all(actions_done) && !time@is_done) {
-      # all actions are done,
-      for (action in actions$.data) {
-        action@time@reset()
-        # if (action@time@mode == "time") {
-        #   action@time@start_time <- time@last_time - time@delta_time
-        # }
-      }
-      actions$.index <- 1L
-      actions_done <- FALSE
-    }
     curr_act <- actions$.data[[actions$.index]]
     # time_rem <- curr_act@time@remaining
 
     # the time that the caller elapsed
     delta_time <- time@delta_time
     delta_time <- curr_act(obj, delta_time)
-    if (delta_time > 0) {
-      browser()
-      warning(sprintf("attempted to push time past limit by %f", delta_time))
-    }
-    if (curr_act@time@is_done && (
-      i <- actions$.index + 1L
-    ) <= length(actions$.data)) {
-      actions$.index <- i
-      ## maybe we don't immediately resolve things
-      # curr_act <- actions$.data[[i]]
-      # if (curr_act@time@duration == 0L) {
-      #   curr_act(obj, 0)
-      # }
-    }
 
+    if (curr_act@is_done) {
+      if ((i <- actions$.index + 1L) <= length(actions$.data)) {
+        # next index is within range of actions
+        actions$.index <- i
+      } else if (!time@is_done) {
+        # we are at the end of the list AND this timer is not
+        # complete yet. reset all times
+        for (action in actions$.data) {
+          action@time@reset()
+        }
+        actions$.index <- 1L
+      }
+    }
     delta_time
   }
 }
@@ -213,7 +194,7 @@ act_series <- new_class(
         function() {
           self@time@reset()
           for (action in self@actions) {
-            action@time@reset()
+            action@reset()
           }
           invisible(self)
         }
@@ -482,7 +463,10 @@ method(print, action) <- function(x, indent = "", ...) {
 
 method(print, act_series) <- function(x, indent = "", ...) {
   cat(
-    sprintf("%s<action series>\n", indent)
+    sprintf(
+      "%s<action series> index: %i\n",
+      indent, attr(x, "actions")$.index
+    )
   )
   cat(
     sprintf("%s%s\n", indent, format(x@time))
