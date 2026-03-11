@@ -152,7 +152,11 @@ shape <- new_class("shape",
             delta_time <- delta_time - min_time
             has_acted <- TRUE
           }
-          invisible(length(self@actions) > 0 || child_acting)
+
+          invisible(length(self@actions) > 0 ||
+            child_acting ||
+            (length(self@children) &&
+              any(vapply(self@children, \(ch) length(ch@actions) > 0, FALSE))))
         }
       }
     ),

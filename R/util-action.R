@@ -172,13 +172,27 @@ capture_actions <- function(actions) {
         actions$.index <- i
       } else if (!time@is_done) {
         # we are at the end of the list AND this timer is not
-        # complete yet. reset all times
+        # complete yet.
+
+        # if there is still time left on parent time,
+        # child may be accelerating.
+        if (time@left > 1e-12) {
+          time@step(time@left)
+          if (time@is_done) {
+            break
+          }
+        }
         for (action in actions$.data) {
-          action@time@reset()
+          action@reset()
         }
         actions$.index <- 1L
+        if (time@cycled && time@is_instant) {
+          time@time <- 0
+          time@value <- time@ease(time@time)
+          time@cycled <- FALSE
+          time@step(0)
+        }
       } else {
-        # we know all other actions are done, and this timer is done
         break
       }
       curr_act <- actions$.data[[actions$.index]]

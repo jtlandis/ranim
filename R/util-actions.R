@@ -144,3 +144,86 @@ scale2 <- function(size, time) {
     obj_scale(obj = obj, target_size = from + (size * time@value))
   }, time = time)
 }
+
+
+spawn_grid <- function(
+  nrow = 1, ncol = 1, padding = 0.05, color = "black", apply = NULL,
+  actions = list(),
+  spawn_time = 0, xtime = 0.1, ytime = 0.1, time = 0,
+  xpadding = padding,
+  ypadding = padding
+) {
+  nrow
+  ncol
+  padding
+  xpadding
+  ypadding
+  color
+  apply
+  actions
+  spawn_time
+  xtime
+  ytime
+  time <- new_time(time)
+  action(
+    time = time,
+    function(obj, time) {
+      if (time@is_done) {
+        extent <- get_extent(obj)
+        y_size <- diff(extent$y)
+        y_pad <- y_size * ypadding
+        x_size <- diff(extent$x)
+        x_pad <- x_size * xpadding
+        width <- (x_size - x_pad) / ncol
+        height <- (y_size - y_pad) / nrow
+        x_pad_ <- x_pad / (ncol + 1L)
+        y_pad_ <- y_pad / (nrow + 1L)
+
+        x_move <- x_pad_ + width
+        y_move <- -(y_pad_ + height)
+        ele <- rect(
+          color = color, width = width, height = height,
+          actions = actions
+        )
+        if (!is.null(apply)) {
+          apply(ele)
+        }
+
+        spawner <- shape(
+          trans = transform(
+            pos(
+              extent$x[1] + (width / 2) + x_pad_,
+              extent$y[2] - (height / 2) - y_pad_
+            )
+          )
+        )@action(
+          spawn_sibling(
+            time = time(0),
+            shape()@action(
+              spawn_sibling(
+                time = time(spawn_time),
+                ele
+              )@then(
+                offset(by = pos(0, y_move), time = time(ytime))
+              )@repeating(nrow - 1L)@finally(despawn())
+            )
+          )@then(
+            offset(by = pos(x_move, 0), time = time(xtime)))@repeating(ncol - 1L)@finally(despawn())
+        )
+        obj@child(spawner)
+      }
+    }
+  )
+}
+
+
+opaqueness <- function(col) col2rgb(col, alpha = TRUE)[4, , drop = TRUE] / 255L
+
+opaque <- function(col, level = 1) {
+  if (level < 0 || level > 1) {
+    stop("opaque level must be between 0 and 1", call. = FALSE)
+  }
+  rgb <- col2rgb(col, alpha = TRUE)
+  rgb["alpha", ] <- (255 * level)
+  class_color(rgb)
+}

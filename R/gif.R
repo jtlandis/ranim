@@ -1,10 +1,10 @@
 calc_duration <- function(obj) {
   obj <- obj_clone(obj)
   time_step <- obj@left
-  i <- 0
+  i <- time_step
   while (obj@act(time_step)) {
-    i <- i + time_step
     time_step <- obj@left
+    i <- i + time_step
   }
   i
 }
@@ -15,7 +15,8 @@ render_gif <- function(
   width = 6, height = 4, units = "in",
   dpi = 100,
   loop = 0,
-  clone = TRUE
+  clone = TRUE,
+  calc = FALSE
 ) {
   if (clone) {
     obj <- obj_clone(obj)
@@ -24,13 +25,17 @@ render_gif <- function(
   clock <- simple_clock(delta_time = 1 / fps)
 
   tmp <- tempdir(TRUE)
-  full_dur <- calc_duration(obj)
-  total_frames <- fps * full_dur
+  total_frames <- if (calc) {
+    full_dur <- calc_duration(obj)
+    (fps * full_dur) + 2L
+  } else {
+    1000
+  }
   nzero <- floor(log10(total_frames)) + 1L
   template <- sprintf("%s/frame_%%0%ii.png", tmp, nzero)
   report_template <- sprintf(
-    "rendering frame %%0%ii/%i\r",
-    nzero, as.integer(total_frames)
+    "rendering frame %%0%ii\r",
+    nzero
   )
   if (!keep_frames) {
     on.exit(file.remove(img_files))
@@ -39,7 +44,15 @@ render_gif <- function(
       sprintf("frames for %s are at %s", file, tmp)
     )
   }
-  i <- 1L
+  i <- 0L
+  if (!quite) cat(sprintf(report_template, i))
+  png(sprintf(template, i),
+    height = height, width = width,
+    res = dpi, units = units
+  )
+  render(obj)
+  dev.off()
+  i <- i + 1L
   while (obj@act(clock@delta_time)) {
     if (!quite) cat(sprintf(report_template, i))
     png(sprintf(template, i), height = height, width = width, res = dpi, units = units)
@@ -47,6 +60,14 @@ render_gif <- function(
     dev.off()
     i <- i + 1L
   }
+  if (!quite) cat(sprintf(report_template, i))
+  png(sprintf(template, i),
+    height = height, width = width,
+    res = dpi, units = units
+  )
+  render(obj)
+  dev.off()
+  i <- i + 1L
   if (!quite) cat("\ncompiling gif...")
   img_files <- list.files(
     path = tmp,

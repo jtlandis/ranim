@@ -16,6 +16,25 @@ pos_y <- function(pos) {
   vctrs::field(pos, "y")
 }
 
+`$.pos` <- function(x, name) {
+  switch(name,
+    x = pos_x(x),
+    y = pos_y(x),
+    stop(sprintf("unknown field '%s'", name), call. = FALSE)
+  )
+}
+
+`.DollarNames.pos` <- function(x, pattern) {
+  if (nchar(pattern) == 0) {
+    return(c("x", "y"))
+  }
+  switch(pattern,
+    x = "x",
+    y = "y",
+    character()
+  )
+}
+
 pos_op <- function(op, x, y) {
   args <- vctrs::vec_recycle_common(x, y)
   op_fn <- getExportedValue("base", op)

@@ -119,8 +119,7 @@ method(obj_rotate, list(apoly, class_pos)) <-
   }
 
 method(get_positions, apoly) <- function(obj) {
-  lst <- lapply(obj@children, get_positions) |>
-    unlist()
-  points <- lapply(obj@points, \(p, g) p + g, g = obj@global)
-  positions(obj@global, !!!points, !!!lst)
+  lst <- get_positions(obj@children)
+  points <- obj@points + obj@global
+  positions(obj@global, points, lst)
 }
