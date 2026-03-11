@@ -1,0 +1,405 @@
+---
+title: "plyxp: From Tidy Code to Tidy Transcripts"
+---
+
+```{r}
+source("R/zzz-load.R")
+
+.render_clone <- NULL
+
+render_ <- function(obj, file) {
+  .render_clone <<- obj_clone(obj)
+  render_gif(obj, file, width = 1400, height = 700, loop = 1,
+    fps = 25, clone = FALSE, 
+    units = "px")
+}
+
+
+```
+
+```{r}
+
+
+w_w <- 10
+w_h <- 5
+w <- window(bl = 0, tr = pos(w_w, w_h))
+trk <- tracker(w)
+.c <- center(w)
+.size <- w_h * 0.9
+
+.assay <- rect(width = .size, height = .size, color = "#8BD79188",
+  trans = transform(.c))
+
+
+w@child(
+  .assay@action(
+    spawn_grid(
+      nrow = 10, ncol = 8, color = "#8BB85F",
+      padding = 0.15,
+      xtime = 0.1,
+      apply = \(x) {obj_scale(x, size = -1)},
+      action = list(scale2(size = 1.2, time = time(.7))@
+       then(scale2(size = -.2, time = time(.2))))
+    )
+  )
+)
+
+trk@track(.assay = .assay)
+
+render_(w, "assay_example.gif")
+bk <- trk@clone()
+```
+
+```{r}
+trk <- bk@restore()
+w <- trk@object
+pal <- scales::pal_gradient_n(scales::pal_viridis(1, 0, 1, 1, "D")(6))
+
+set.seed(123)
+lapply(.assay@children, \(child) {
+  child$start <- child@color
+  child$val <- runif(1)
+  child$end <- pal(child$val)
+  child@action(
+    color(child$start, child$end, time = time(3, ease = ease(ecubic)))
+  )
+}) |> invisible()
+
+
+render_(w, "assay_color.gif")
+bk <- trk@clone()
+```
+
+```{r}
+
+
+scale_top <- function(size, time) {
+  time <- new_time(time)
+  action(function(obj, time) {
+    force(time)
+    if (is.null(time$from)) {
+      time$from <- obj_size(obj)
+      .clone <- obj_scale(obj_clone(obj), size = size)
+      time$width <- .clone@width
+      time$height <- .clone@height
+      time$around <- tc(.clone)
+    }
+    from <- time$from
+    height <-  time$height * time@value
+    obj@height <- height
+    obj@width <- time$width
+    obj_translate(obj, pos(time$around$x, time$around$y - (height / 2)))
+  }, time = time)
+}
+```
+
+```{r}
+trk <- bk@restore()
+w <- trk@object
+
+.lc <- lc(.assay)
+.rows <- rect(height = .assay@height, width = .lc$x * 0.8,
+  transform(
+    pos(mean(c(0, .lc$x)), .lc$y) 
+  ),
+  color = "#AC94CA00"
+) 
+w@child(.rows)
+trk@track(.rows = .rows)
+
+.rows@action(
+  color(
+    "#AC94CA00", "#AC94CAFF", time = time(1, ease = ecubic)
+  )@then(
+    spawn_grid(nrow = 1, ncol = 3, xtime = 0, 
+      color = "#AC43CE", ypadding = .02, xpadding = .1,
+      apply = \(x) obj_scale(x, size = -1),
+    actions = list(
+      scale_top(size = 1, 
+        time = time(.4, ease = ease(ecubic, ecubic))
+      )@then(
+        spawn_grid(nrow = 10, ncol = 1, xtime = 0,
+          color = "#AC6ACA", padding = .2,
+          apply = \(x) obj_scale(x, size = -1),
+          action = list(scale2(size = 1, time = time(.7)))
+        )
+      )))
+  )
+)
+
+render_(w, "assay_rows.gif" )
+```
+
+```{r}
+bk <- obj_clone(trk)
+```
+
+```{r}
+trk <- bk@restore()
+w <- trk@object
+.bl <- bl(.rows)
+
+w@action(
+  action(
+    function(obj, time) {
+      obj_scale(obj@children[[1]], .bl, size = -0.25 * time@delta)      
+      obj_scale(obj@children[[2]], .bl, size = -0.25 * time@delta)
+    },
+    time = time(1.5, ease = ease(ecubic, ecubic))
+  )
+)
+render_(w, "shrink_assay_row.gif")
+bk <- trk@clone()
+```
+
+
+```{r}
+trk <- bk@restore()
+w <- trk@object
+"#FFDC8F" #inner
+"#FFA909" #column
+"#E1C757" #context
+.tc <- tc(.assay)
+.cols <- rect(height = (5 - .tc$y) * .8 , width = .assay@width,
+  transform(
+    pos(.tc$x, mean(c(5, .tc$y))) 
+  ),
+  color = "#E1C75700"
+) 
+w@child(.cols)
+trk@track(.cols = .cols)
+
+.cols@action(
+  color(
+    "#E1C75700", "#E1C757FF", time = time(1, ease = ecubic)
+  )@then(
+    spawn_grid(nrow = 2, ncol = 1, xtime = 0, 
+      color = "#FFA909", xpadding = .015, ypadding = .1,
+      apply = \(x) obj_scale(x, size = -1),
+    actions = list(
+      scale_top(size = 1, 
+        time = time(.4, ease = ease(ecubic, ecubic))
+      )@then(
+        spawn_grid(nrow = 1, ncol = 8, ytime = 0,
+          color = "#FFDC8F", padding = .2, xpadding = .15,
+          apply = \(x) obj_scale(x, size = -1),
+          action = list(scale2(size = 1, time = time(.7)))
+        )
+      )))
+  )
+)
+
+render_(w, "assay_cols.gif" )
+bk <- trk@clone()
+```
+
+```{r}
+trk <- bk@restore()
+w <- trk@object
+
+# reorder children elements position in world space
+.assay@children <- .assay@children[lapply(.assay@children, obj_pos) |> vctrs::list_unchop() |> (\(x) order(x$x, x$y, decreasing = c(FALSE, TRUE)))()]
+
+.df <- rect(width = 4, height = 5, 
+  trans = transform(pos(7.8, 2.5)),
+  color = "grey80")
+
+.dest_cache <- calc_grid(
+  .df, nrow = 80, ncol = 6, 
+  xpadding = 0.01,
+  xmargin = 1
+)
+.height <- attr(.dest_cache, "features")["height"]
+.width <- attr(.dest_cache, "features")["width"]
+
+.simple_scale <- function(obj, time) {
+  if (is.null(time$dh)) {
+    time$dh <- .height - obj@height
+    time$dw <- .width - obj@width 
+  }
+  obj@height <- obj@height + (time$dh * time@delta)
+  obj@width <- obj@width + (time$dw * time@delta)
+}
+w@child(.df)
+trk@track(.df = .df)
+```
+
+```{r}
+.assay@action(
+  action(
+    function(obj, time) {
+      if (time@cycled) {
+        if (is.null(time$index)) {
+          time$index <- 0L
+        }
+        time$index <- time$index + 1L
+        time@time_scale <- time@time_scale * 1.01 # accelerate
+        orig_child <- obj@children[[time$index]]
+        child <- obj_clone(orig_child)@action(
+          translate(.dest_cache[[1]][time$index], time = time(.75, ease = ease(ecubic))),
+        )@action(
+          .simple_scale,
+          time = time(.75, ease = ease(ecubic))
+        )
+        orig_child@color <- opaque(orig_child@color, 0.5)
+        spawn_from(.df, child)
+      }
+    },
+    time = time(.1, repeating = 79)
+  )
+)
+```
+
+```{r}
+
+.unpack_row <- function(obj, time) {
+  if (time@cycled) {
+    if (is.null(time$col)) {
+      time$col <- 1L
+      time$i <- 0L
+    }
+    if (is.null(time$index) || time$index == 10L) {
+      time$index <- 0L
+    }
+    if (time$i == 80) {
+      browser()
+      time$i <- 0L
+      time$col <- time$col + 1L
+    }
+    time$i <- time$i + 1L
+    time$index <- time$index + 1L
+    time@time_scale <- time@time_scale * 1.01 # accelerate
+    column <- obj@children[[time$col]]
+    orig_child <- column@children[[time$index]]
+    child <- obj_clone(orig_child)@action(
+      translate(.dest_cache[[time$col + 1L]][time$i],
+        time = time(.75, ease = ease(ecubic))),
+    )@action(
+      .simple_scale,
+      time = time(.75, ease = ease(ecubic))
+    )
+    orig_child@color <- opaque(orig_child@color, 
+      opaqueness(orig_child@color) - 0.0625)
+    spawn_from(.df, child)
+  }
+}
+
+.rows@action(
+  action(
+    function(obj, time) {
+      if (time@cycled) {
+        time@reset()
+      }
+      if (length(.assay@actions) == 0L) {
+        time@cycled <- TRUE
+        time@iter <- time@iter + 1L
+      }
+    },
+    # inf time is conditional
+    time = time(1)
+  )@then(
+    action(
+      .unpack_row,
+      time = time(.1, repeating = 239)
+    )
+  )
+  
+)
+
+render_(w, "unpacking_assay_rows.gif")
+```
+
+
+```{r}
+.assay <- .w@children[[1]]
+.assay@children <- .assay@children[lapply(.assay@children, obj_pos) |>
+vctrs::list_unchop() |> order()]
+.pos <- vctrs::list_unchop(lapply(.assay@children, obj_pos))
+row_order <- vapply(.assay@children, \(x) x$val, 1) |>
+  matrix(10, 8) |>
+  dist() |>
+  hclust() |>
+  _$order
+xtent <- get_extent(.assay@children)
+target_y <- matrix(vctrs::field(.pos, "y"), 10, 8) |> _[row_order,]
+col_order <- vapply(.assay@children, \(x) x$val, 1) |>
+  matrix(10, 8) |>
+  t() |>
+  dist() |>
+  hclust() |>
+  _$order
+target_x <- matrix(vctrs::field(.pos, "x"), 10, 8) |> _[,col_order]
+mapply(
+  \(child, target) {
+    child$old_pos <- child@trans@global
+    child$new_pos <- target
+    child@action(
+      translate(target, time = time(3))
+    )
+  },
+  child = .assay@children,
+  target = pos(as.vector(target_x), as.vector(target_y))
+)
+.w3 <- anim(.w)
+
+# mapply(
+#   \(child, target) {
+#     child$new_y <- target
+#     child@action(
+#       offset(by = pos(0, target - vctrs::field(obj_pos(child), "y")), time = time(3))
+#     )
+#   },
+#   child = .w@children,
+#   target = vctrs::vec_rep(target_y, 8)
+# )
+# # .w2 <- anim(.w)
+# mapply(
+#   \(child, target) {
+#     child$new_y <- target
+#     child@action(
+#       offset(by = pos(target - vctrs::field(obj_pos(child), "x"), 0), time = time(3))
+#     )
+#   },
+#   child = .w@children,
+#   target = vctrs::vec_rep_each(target_x, 10)
+# )
+
+```
+
+## Introduction
+
+my name is Justin Landis and today I get to share some of the work I have done since joining the Love Lab.
+
+### Overview
+
+To somewhat spoil the contents of this presentation, I will primarily be discussing the R package I have developed pronounced 'plyxp'.
+In a way, this student seminar works well for me, as I have a personal goal of advertising this package to its target audience.
+And while not everyone in this room may use Bioconductor, or even R packages, this particular room has a higher chance to be an interested user than say any random individual in chapel hill.
+That being said, the work I will be presenting on today is currently being drafted into an application note, where we have made an intentional effort to describe the framework as language agnositic as possible.
+So if by the end of the talk you would be interested in maybe expanding this to python, please reach out to me and we can grab a coffee.
+
+### What is tidyomics
+
+
+
+## Timeline
+
+May 2024 - tidyomics introduced
+Oct 2024 - plyxp accepted into Bioconductor
+June 2025 - GBCC talk
+August 2025 - UseR!: tidyomics workshop
+Oct 2025 - tidySumamrizedExperiment started to use plyxp
+Oct 2025 - CZI project showcase
+2026? - plyxp backend released as biocmask
+2026? - use biocmask to rewrite plyranges?
+
+
+## plyxp syntax
+
+## plyxp semantics
+
+## call for interest in python
+
+## fast forward to transcripts (eventual goal)
+
+## show case progress
