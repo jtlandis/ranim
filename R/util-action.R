@@ -112,6 +112,12 @@ action <- new_class(
         self@time@left
       }
     )
+    # duration = new_property(
+    #   class = class_numeric,
+    #   getter = function(self) {
+    #     self@time@duration
+    #   }
+    # )
   ),
   constructor = function(func,
                          time) {
@@ -262,10 +268,22 @@ act_series <- new_class(
       class = class_numeric,
       function(self) {
         action_env <- attr(self, "actions")
+        # trigger time udpate
+        # self@duration
         curr_action <- action_env$.data[[action_env$.index]]
         curr_action@left
       }
     )
+    # duration = new_property(
+    #   class = class_numeric,
+    #   getter = function(self) {
+    #     action_env <- attr(self, "actions")
+    #     dur <- vapply(action_env$.data, prop, numeric(1), name = "duration")
+    #     dur <- sum(dur)
+    #     self@time@time_scale <- 1 / dur
+    #     dur
+    #   }
+    # )
   ),
   constructor = function(..., repeating = 0) {
     dots <- rlang::list2(...)

@@ -37,6 +37,12 @@ render_gif <- function(
     "rendering frame %%0%ii\r",
     nzero
   )
+  if (length(.files <- list.files(
+    path = tmp,
+    pattern = "frame_.*\\.png", full.names = TRUE
+  ))) {
+    file.remove(.files)
+  }
   if (!keep_frames) {
     on.exit(file.remove(img_files))
   } else {

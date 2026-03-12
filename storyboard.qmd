@@ -47,11 +47,11 @@ w@child(
 trk@track(.assay = .assay)
 
 render_(w, "assay_example.gif")
-bk <- trk@clone()
+bk0 <- trk@clone()
 ```
 
 ```{r}
-trk <- bk@restore()
+trk <- bk0@restore()
 w <- trk@object
 pal <- scales::pal_gradient_n(scales::pal_viridis(1, 0, 1, 1, "D")(6))
 
@@ -67,7 +67,7 @@ lapply(.assay@children, \(child) {
 
 
 render_(w, "assay_color.gif")
-bk <- trk@clone()
+bk1 <- trk@clone()
 ```
 
 ```{r}
@@ -94,7 +94,7 @@ scale_top <- function(size, time) {
 ```
 
 ```{r}
-trk <- bk@restore()
+trk <- bk1@restore()
 w <- trk@object
 
 .lc <- lc(.assay)
@@ -128,14 +128,17 @@ trk@track(.rows = .rows)
 )
 
 render_(w, "assay_rows.gif" )
+bk2 <- obj_clone(trk)
 ```
 
 ```{r}
-bk <- obj_clone(trk)
+trk <- bk2@restore()
+w <- trk@object
+
 ```
 
 ```{r}
-trk <- bk@restore()
+trk <- bk2@restore()
 w <- trk@object
 .bl <- bl(.rows)
 
@@ -149,12 +152,12 @@ w@action(
   )
 )
 render_(w, "shrink_assay_row.gif")
-bk <- trk@clone()
+bk3 <- trk@clone()
 ```
 
 
 ```{r}
-trk <- bk@restore()
+trk <- bk3@restore()
 w <- trk@object
 "#FFDC8F" #inner
 "#FFA909" #column
@@ -190,11 +193,11 @@ trk@track(.cols = .cols)
 )
 
 render_(w, "assay_cols.gif" )
-bk <- trk@clone()
+bk4 <- trk@clone()
 ```
 
 ```{r}
-trk <- bk@restore()
+trk <- bk4@restore()
 w <- trk@object
 
 # reorder children elements position in world space
@@ -225,6 +228,7 @@ trk@track(.df = .df)
 ```
 
 ```{r}
+.time_sc <- NULL
 .assay@action(
   action(
     function(obj, time) {
@@ -233,7 +237,7 @@ trk@track(.df = .df)
           time$index <- 0L
         }
         time$index <- time$index + 1L
-        time@time_scale <- time@time_scale * 1.01 # accelerate
+        .time_sc <<- time@time_scale <- time@time_scale * 1.01 # accelerate
         orig_child <- obj@children[[time$index]]
         child <- obj_clone(orig_child)@action(
           translate(.dest_cache[[1]][time$index], time = time(.75, ease = ease(ecubic))),
@@ -248,10 +252,15 @@ trk@track(.df = .df)
     time = time(.1, repeating = 79)
   )
 )
+
+render_(w, "unpacking_assay.gif")
+bk5 <- trk@clone()
 ```
 
 ```{r}
-
+trk <- bk5@restore()
+w <- trk@object
+.rtime_sc <- NULL
 .unpack_row <- function(obj, time) {
   if (time@cycled) {
     if (is.null(time$col)) {
@@ -262,13 +271,12 @@ trk@track(.df = .df)
       time$index <- 0L
     }
     if (time$i == 80) {
-      browser()
       time$i <- 0L
       time$col <- time$col + 1L
     }
     time$i <- time$i + 1L
     time$index <- time$index + 1L
-    time@time_scale <- time@time_scale * 1.01 # accelerate
+    .rtime_sc <<- time@time_scale <- min(time@time_scale * 1.01, 70) # accelerate
     column <- obj@children[[time$col]]
     orig_child <- column@children[[time$index]]
     child <- obj_clone(orig_child)@action(
@@ -300,15 +308,93 @@ trk@track(.df = .df)
   )@then(
     action(
       .unpack_row,
-      time = time(.1, repeating = 239)
+      time = time(1 / .time_sc, repeating = 239)
     )
   )
   
 )
 
-render_(w, "unpacking_assay_rows.gif")
+render_(w, "unpacking_rows.gif")
+bk6 <- trk@clone()
 ```
 
+```{r}
+trk <- bk6@restore()
+w <- trk@object
+.unpack_col <- function(obj, time) {
+  if (time@cycled) {
+    if (is.null(time$col)) {
+      time$col <- 1L
+      time$i <- 0L
+    }
+    if (is.null(time$index)) {
+      time$index <- 0L
+    }
+    if (time$i == 80) {
+      time$i <- 0L
+      time$col <- time$col + 1L
+      time$index <- 0L
+    }
+    
+    
+    time$i <- time$i + 1L
+    
+    if ((time$i - 1L) %% 10L == 0L) {
+      time$index <- time$index + 1L
+    }
+    
+    time@time_scale <- min(time@time_scale * 1.01, 70) # accelerate
+    column <- obj@children[[time$col]]
+    orig_child <- column@children[[time$index]]
+    child <- obj_clone(orig_child)@action(
+      translate(.dest_cache[[time$col + 4L]][time$i],
+        time = time(.75, ease = ease(ecubic))),
+    )@action(
+      .simple_scale,
+      time = time(.75, ease = ease(ecubic))
+    )
+    orig_child@color <- opaque(orig_child@color, 
+      opaqueness(orig_child@color) - 0.0625)
+    spawn_from(.df, child)
+  }
+}
+
+.cols@action(
+  action(
+    function(obj, time) {
+      if (time@cycled) {
+        time@reset()
+      }
+      if (length(.rows@actions) == 0L) {
+        time@cycled <- TRUE
+        time@iter <- time@iter + 1L
+      }
+    },
+    # inf time is conditional
+    time = time(1)
+  )@then(
+    action(
+      .unpack_col,
+      time = time(1/40, repeating = 159)
+    )
+  )
+  
+)
+
+render_(w, "unpacking_cols.gif")
+bk7 <- trk@clone()
+```
+
+```{r}
+local({
+  .g1 <- magick::image_read("unpacking_assay.gif")
+  .g2 <- magick::image_read("unpacking_rows.gif")
+  .g3 <- magick::image_read("unpacking_cols.gif")
+  magick::image_animate(c(.g1, .g2, .g3), fps = 25, loop = 1) |>
+  magick::image_write("unpacking.gif")
+})
+
+```
 
 ```{r}
 .assay <- .w@children[[1]]
