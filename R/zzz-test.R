@@ -112,8 +112,10 @@ magick::image_read(img_files) |>
   magick::image_animate(fps = 100) |>
   magick::image_write("animation3.gif")
 
-
-stuff <- shape()
+w <- window(bl = pos(-10, -10), tr = pos(10, 10))
+stuff <- shape()@action(
+  translate(to = pos(-6, -6), time(duration = 2))
+)
 points <- point(
   color = "red",
   trans = transform(pos(1, 1))
@@ -125,34 +127,35 @@ points <- point(
   offset = pos(0, 3)
 )
 tri <- apoly(
-  pos(),
+  pos(0),
   pos(2, 0),
   pos(0, 2),
   trans = transform(pos(1, 1))
 )@child(
-  apoly(pos(), pos(1, 0), pos(0, 1),
+  apoly(pos(0), pos(1, 0), pos(0, 1),
     color = "cyan"
   ),
   offset = pos(1, 1)
 )
 stuff@child(points)@child(tri)
-stuff@action(
-  act_series(
-    rotate(
-      360,
-      time(
-        duration = 3,
-        ease = ease(ecubic)
-      )
-    ),
-    scale(2, time(1.4, ease = ease(ecos))),
-    scale(-2, time(2, ease = ease(ecubic, ecubic)))
-))
-render_frame(stuff, -10:10, -10:10)
+# stuff@action(
+#   act_series(
+#     rotate(
+#       360,
+#       time(
+#         duration = 3,
+#         ease = ease(ecubic)
+#       )
+#     ),
+#     scale(2, time(1.4, ease = ease(ecos))),
+#     scale(-2, time(2, ease = ease(ecubic, ecubic)))
+# ))
+# render_frame(stuff, -10:10, -10:10)
+anim(w@child(stuff), fps = 100)
 i <- 0L
 ii <- 0L
 time <- Sys.time()
-while (stuff@act()) {
+while (stuff@act(0.001)) {
   d <- Sys.time() - time
   if (d > 1) {
     time <- Sys.time()
@@ -197,11 +200,11 @@ render_frame(stuff, -1:5, -1:5)
 
 source("R/zzz-load.R")
 
-acts <- scale(2, time(10, ease = ease(ecubic)), recursive = FALSE)@
+acts <- scale(2, time(5, ease = ease(ecubic)), recursive = FALSE)@
 then(
-  rotate(360, time(5), local = TRUE)
+  rotate(360, time(3), local = TRUE)
 )
-spin <- rotate(180, time = time(5, reapting = 1), local = TRUE)
+spin <- rotate(180, time = time(5, repeating = 1), local = TRUE)
 acts@time@repeating <- 1L
 w <- window(
   bl = pos(-1, -1),
@@ -213,6 +216,8 @@ w <- window(
     then(
       action(
         \(obj, time) {
+          cat("Resetting spin\n")
+          cat(format(time), "\n")
           obj@children[[4]]@action(
             spin@reset()
           )
@@ -220,9 +225,8 @@ w <- window(
         time = time(0)
       )
     ),
-    repeating = 1
+    repeating = 2
   )
-
 )@child(
   apoly(
     pos(-3, -3),
@@ -261,10 +265,6 @@ p <- point(
 )
 
 w@child(p)
-spin <- rotate(
-  degrees = 180, local = TRUE,
-  time = time(5, repeating = 1)
-)
 p@action(spin)
 
 wc <- obj_clone(w)
@@ -274,3 +274,103 @@ while (w@act()) {
   count <- count + 1L
   render(w)
 }
+
+mv_right <- duplicate(time(0))@then(offset(by = pos(1.2, 0), time(1)))@repeating(5L)
+
+green_rect <- rect(color = "#a6f839")@action(
+  spawn_sibling(rect(color = "#a6f839"), time(0))@then(
+    offset(by = pos(0, -1.2), time(1))
+  )@repeating(4)
+)
+# rect(trans = transform(pos(-8.5, 8.5)), color = "#a6f839")@action(
+#   act_series(
+#     spawn_sibling(green_rect, offset = pos(0, 0), time(0))@then(
+#       offset(by = pos(1.2, 0), time(1)))@repeating(5),
+#     spawn_sibling(green_rect, time(0))
+#   )
+# )
+
+w <- window(bl = pos(-10, -10), tr = pos(10, 10))@child(
+  shape(trans = transform(pos(-8, 8)))@action(
+    spawn_sibling(
+      time = time(0),
+      rect(color = "#a6f839", width = .9, height = .9)@action(
+        spawn_sibling(
+          time = time(0),
+          rect(color = "#a6f839", width = .9, height = .9)
+        )@then(
+          offset(by = pos(0, -1), time = time(.5))
+        )@repeating(3)
+      )
+    )@then(
+      offset(by = pos(1, 0), time = time(.7))
+    )@repeating(5)
+  )
+)
+# w@action(
+#   spawn(rect()@action(
+#     offset(by = pos(4, 0), time = time(5))
+#   )@action(
+#     offset(by = pos(0, 5), time = time(5))
+#   )@action(
+#     offset(by = pos(-4, 0), time = time(5))
+#   ), pos(0,0), time = time(0))
+# )
+
+.w <- anim(w)
+.w@children <- .w@children[-1L]
+pal <- scales::pal_gradient_n(scales::pal_viridis(1, 0, 1, 1, "D")(6))
+set.seed(42)
+lapply(.w@children, \(child) {
+  child$start <- child@color
+  child$val <- runif(1)
+  child$end <- pal(child$val)
+  child@action(
+    color(child$start, child$end, time = time(3, ease = ease(ecubic)))
+  )
+})
+.w <- anim(.w)
+.c <- obj_clone(.w)
+.w@children <- .w@children[vapply(.w@children, \(obj) {
+  pos <- obj_pos(obj)
+  c(pos@x, pos@y)
+}, numeric(2)) |>
+  t() |>
+  as.data.frame() |>
+  do.call(order, args = _)]
+row_order <- vapply(.w@children, \(x) x$val, 1) |>
+  matrix(5, 6) |>
+  dist() |>
+  hclust() |>
+  _$order
+xtent <- get_extent(.w@children)
+target_y <- do.call(seq, args = as.list(xtent$ylim))[row_order]
+col_order <- vapply(.w@children, \(x) x$val, 1) |>
+  matrix(5, 6) |>
+  t() |>
+  dist() |>
+  hclust() |>
+  _$order
+target_x <- do.call(seq, args = as.list(xtent$xlim))[col_order]
+mapply(
+  \(child, target) {
+    child$new_y <- target
+    child@action(
+      offset(by = pos(0, target - obj_pos(child)@y), time = time(3))
+    )
+  },
+  child = .w@children,
+  target = vctrs::vec_rep(target_y, 6)
+)
+# .w2 <- anim(.w)
+mapply(
+  \(child, target) {
+    child$new_y <- target
+    child@action(
+      offset(by = pos(target - obj_pos(child)@x, 0), time = time(3))
+    )
+  },
+  child = .w@children,
+  target = vctrs::vec_rep_each(target_x, 5)
+)
+.w3 <- anim(.w)
