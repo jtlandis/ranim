@@ -134,11 +134,59 @@ bk2 <- obj_clone(trk)
 ```{r}
 trk <- bk2@restore()
 w <- trk@object
+rpal <- scales::pal_gradient_n(scales::pal_viridis(1, 0, 1, 1, "C")(6))
+
+set.seed(42)
+
+.rows@children[[1]]@children |> lapply(
+  function(child) {
+    child$start <- child@color
+    child$val <- sample(c(0,.333,.6666,1), 1)
+    child$end <- rpal(child$val)
+    child@action(
+      color(child$start, child$end, time = time(2, ease = ease(ecubic)))
+    )
+  }
+) |> invisible()
+
+.rows@children[[2]]@children |> lapply(
+  function(child) {
+    child$start <- child@color
+    child$val <- sample(c(.2,.5, .7, .8), 1)
+    child$end <- rpal(child$val)
+    child@action(
+      color(child$start, child$end, time = time(2, ease = ease(ecubic)))
+    )
+  }
+) |> invisible()
+
+.rows@children[[3]]@children |> lapply(
+  function(child) {
+    child$start <- child@color
+    child$val <- runif(1)
+    child$end <- rpal(child$val)
+    child@action(
+      color(child$start, child$end, time = time(2, ease = ease(ecubic)))
+    )
+  }
+) |> invisible()
+
+render_(w, "rows_color.gif")
+bk2_2 <- trk@clone()
 
 ```
 
 ```{r}
-trk <- bk2@restore()
+local({
+  .g1 <- magick::image_read("assay_rows.gif")
+  .g2 <- magick::image_read("rows_color.gif")
+  magick::image_animate(c(.g1, .g2), fps = 25, loop = 1) |>
+  magick::image_write("assay_rows_color.gif")
+})
+```
+
+```{r}
+trk <- bk2_2@restore()
 w <- trk@object
 .bl <- bl(.rows)
 
@@ -199,6 +247,47 @@ bk4 <- trk@clone()
 ```{r}
 trk <- bk4@restore()
 w <- trk@object
+cpal <- scales::pal_gradient_n(RColorBrewer::brewer.pal(name = "YlOrRd", n = 6))
+set.seed(31)
+
+.cols@children[[1]]@children |> lapply(
+  function(child) {
+    child$start <- child@color
+    child$val <- sample(c(.1, .9), 1)
+    child$end <- cpal(child$val)
+    child@action(
+      color(child$start, child$end, time = time(2, ease = ease(ecubic)))
+    )
+  }
+) |> invisible()
+
+.cols@children[[2]]@children |> lapply(
+  function(child) {
+    child$start <- child@color
+    child$val <- runif(1)
+    child$end <- cpal(child$val)
+    child@action(
+      color(child$start, child$end, time = time(2, ease = ease(ecubic)))
+    )
+  }
+) |> invisible()
+
+render_(w, "cols_color.gif")
+bk4_2 <- trk@clone()
+```
+
+```{r}
+local({
+  .g1 <- magick::image_read("assay_cols.gif")
+  .g2 <- magick::image_read("cols_color.gif")
+  magick::image_animate(c(.g1, .g2), fps = 25, loop = 1) |>
+  magick::image_write("assay_cols_color.gif")
+})
+```
+
+```{r}
+trk <- bk4_2@restore()
+w <- trk@object
 
 # reorder children elements position in world space
 .assay@children <- .assay@children[lapply(.assay@children, obj_pos) |> vctrs::list_unchop() |> (\(x) order(x$x, x$y, decreasing = c(FALSE, TRUE)))()]
@@ -208,9 +297,9 @@ w <- trk@object
   color = "grey80")
 
 .dest_cache <- calc_grid(
-  .df, nrow = 80, ncol = 6, 
-  xpadding = 0.01,
-  xmargin = 1
+  .df, nrow = 80, ncol = 6,
+  ymargin = 1,
+  ypadding = 0.01
 )
 .height <- attr(.dest_cache, "features")["height"]
 .width <- attr(.dest_cache, "features")["width"]
