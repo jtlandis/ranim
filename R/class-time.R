@@ -9,7 +9,7 @@ one_tol <- 1 - 1e-12
 #' @param duration Numeric duration of the animation in seconds.
 #'   Defaults to 1.
 #' @param ease An easing function (see [`ease()`]) that maps time
-#'   [0, 1] to a progress value [0, 1]. Defaults to [`elinear`].
+#'   from \\[0, 1\\] to a progress value in \\[0, 1\\]. Defaults to [`elinear`].
 #' @param repeating Integer: number of times to repeat the animation
 #'   after the first playthrough (0 = play once, 1 = play twice, etc.).
 #'   Can also be `Inf` for infinite repetition.
@@ -17,8 +17,8 @@ one_tol <- 1 - 1e-12
 #'   `"fps"` for fixed frame rate. Usually set via [`window()`].
 #'
 #' @section Properties:
-#' * `time`: Current phase within [0, 1].
-#' * `value`: Current eased value within [0, 1].
+#' * `time`: Current phase in \\[0, 1\\].
+#' * `value`: Current eased value in \\[0, 1\\].
 #' * `delta`: Change in value since the last step.
 #' * `iter`: Current iteration count (0-indexed).
 #' * `is_done`: Logical; whether all repetitions are complete.

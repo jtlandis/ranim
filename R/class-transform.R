@@ -1,6 +1,6 @@
 #' Transform objects
 #'
-#' A `transform` encapsulates the spatial properties of a [`shape`]:
+#' A `transform` encapsulates the spatial properties of a [shape]:
 #' position, size, and rotation angle. Transforms use an anchor point
 #' (typically the parent's position) and an offset to compute the
 #' global position.

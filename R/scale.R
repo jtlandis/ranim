@@ -1,3 +1,4 @@
+#' Scale an object
 #' @param obj dispatch arg to scale
 #' @param around location to scale from
 #' @param ... for extensions

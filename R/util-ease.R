@@ -11,12 +11,15 @@
 #' * `equad`: Quadratic ease-in curve (t^2)
 #' * `ecubic`: Cubic ease-in curve (t^3)
 #'
-#' All easing functions take a numeric value `t` in [0, 1] and return
-#' a value in [0, 1], mapping start to end of animation.
+#' All easing functions take a numeric value `t` in the closed interval
+#' \\[0, 1\\] and return a value in \\[0, 1\\], mapping start to end of animation.
+#' Values of `t` outside \\[0, 1\\] are allowed but may produce results
+#' outside \\[0, 1\\] depending on the specific easing function.
 #'
-#' @param t A numeric value in [0, 1] representing normalized time.
+#' @param t A numeric value in the closed interval \\[0, 1\\] representing
+#'   normalized time.
 #'
-#' @return Numeric value in [0, 1].
+#' @return Numeric value in \\[0, 1\\] when `t` is in \\[0, 1\\].
 #'
 #' @examples
 #' # Linear easing
@@ -99,22 +102,26 @@ check_valid_ease <- function(f, name) {
 #' sophisticated timing curves for animations.
 #'
 #' @param ein An optional ease-in function (applied to the first half
-#'   of the interval in default mode).
+#'   of the interval in default mode). See [elinear()] and related
+#'   easing functions for valid examples.
 #' @param eout An optional ease-out function (applied to the second half
-#'   of the interval in default mode).
+#'   of the interval in default mode). See [elinear()] and related
+#'   easing functions for valid examples.
 #' @param etime A base time transformation applied to the entire interval.
-#'   Defaults to [`elinear`].
+#'   Defaults to [elinear()].
 #' @param mode How to combine `ein` and `eout`:
-#'   - `"default"`: Apply `ein` to [0, 0.5) and `eout` to [0.5, 1]
-#'   - `"weighted"`: Blend `ein` and `eout` based on position in [0, 1]
+#'   - `"default"`: Apply `ein` to the sub-interval \\[0, 0.5) and `eout`
+#'     to the sub-interval \\[0.5, 1\\]
+#'   - `"weighted"`: Blend `ein` and `eout` based on position in \\[0, 1\\]
 #'
-#' @return An object of class `ease` that can be used with [`time()`]
+#' @return An object of class `ease` that can be used with [time()]
 #'   or passed to action constructors.
 #'
 #' @details
 #' Easing functions must satisfy:
-#' - Exactly one argument (the normalized time `t` in [0, 1])
-#' - Map 0 to 0 and 1 to 1
+#' - Exactly one argument (the normalized time `t` in the closed
+#'   interval \\[0, 1\\])
+#' - Map 0 to 0 and 1 to 1 when evaluated at those endpoints
 #'
 #' @examples
 #' # Linear easing (same as elinear)

@@ -1,6 +1,6 @@
 #' @include class-time.R
 
-#' Substitute expressions in an environment
+#' @title Substitute expressions in an environment
 #'
 #' @param expr An expression to substitute.
 #' @param env An environment in which to perform substitution.
@@ -19,7 +19,7 @@ class_expr_to <- new_union(class_name, class_call)
 
 #' Expression mapping for action constructors
 #'
-#' `expr_map()` is a small helper class used by [`into_action()`] to
+#' `expr_map()` is a small helper class used by [into_action()] to
 #' describe how arguments in a user-facing action constructor
 #' are rewritten into calls to a lower-level implementation.
 #'
@@ -78,8 +78,8 @@ expr_map <- new_class(
 #'
 #' `action()` wraps a simple `(obj, time)` function into an object that
 #' can be scheduled and combined with other actions. Actions are
-#' associated with [`time`] objects and are attached to [`shape`]
-#' instances via the `@action` property.
+#' associated with [time()] objects and are attached to [shape] instances
+#' via the `@action` property.
 #'
 #' @param func A function with signature `function(obj, time)` that
 #'   performs the animation. The `obj` parameter is the shape being
@@ -98,7 +98,7 @@ expr_map <- new_class(
 #'
 #' @return An object of class `action`.
 #'
-#' @seealso [`time`], [`shape`], [`act_series`], [`into_action()`]
+#' @seealso [time()], [shape], [act_series], [into_action()]
 #'
 #' @export
 action <- new_class(
@@ -425,11 +425,18 @@ get_methods <- function(generic, name = deparse(substitute(generic))) {
   }
   UseMethod("get_methods")
 }
+
+#' @exportS3Method
 get_methods.default <- function(generic, name = NULL) {
-  on.exit(print(generic))
-  stop("Un-reachable state for:")
+  if (!is.function(generic)) {
+    on.exit(print(generic))
+    stop("Un-reachable state for:")
+  }
+  get_methods_function(generic, name)
 }
-get_methods.function <- function(generic, name = NULL) {
+
+
+get_methods_function <- function(generic, name = NULL) {
   met <- methods(name)
   if (length(met) == 0) {
     # its just a simple function
@@ -505,6 +512,9 @@ walk_table <- function(tbl) {
   lst
 }
 
+
+
+#' @exportS3Method
 get_methods.S7_generic <- function(generic, name = NULL) {
   walk_table(generic@methods)
 }
@@ -516,6 +526,8 @@ all_formals <- function(func, name) {
     Reduce(union, x = _)
 }
 
+#' Convert a function into an action
+#'
 #' @param func a function to turn into an action function
 #' @param obj_arg name of argument to pass "obj" to
 #' @param remap a expr_map object that describes an

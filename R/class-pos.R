@@ -54,6 +54,7 @@ pos_y <- function(pos) {
   vctrs::field(pos, "y")
 }
 
+#' @export
 `$.pos` <- function(x, name) {
   switch(name,
     x = pos_x(x),
@@ -62,6 +63,7 @@ pos_y <- function(pos) {
   )
 }
 
+#' @export
 `.DollarNames.pos` <- function(x, pattern) {
   if (nchar(pattern) == 0) {
     return(c("x", "y"))
@@ -183,6 +185,7 @@ vec_cast.pos.integer <- function(x, to, ...) pos(x)
 #   .data
 # }
 
+#' @export
 format.pos <- function(x, ...) {
   sprintf(
     "(%s, %s)", format(vctrs::field(x, "x")),
@@ -190,9 +193,11 @@ format.pos <- function(x, ...) {
   )
 }
 
+#' @export
 vec_arith.pos <- function(op, x, y, ...) {
   UseMethod("vec_arith.pos", y)
 }
+#' @export
 vec_arith.pos.default <- function(op, x, y, ...) {
   vctrs::stop_incompatible_op(op, x, y)
 }
@@ -207,8 +212,10 @@ do_pos_op <- function(op, x, y, ...) {
   )
 }
 
+#' @export
 vec_arith.pos.pos <- do_pos_op
 
+#' @export
 vec_arith.numeric.pos <- function(op, x, y, ...) {
   switch(op,
     "&" = ,
@@ -218,6 +225,7 @@ vec_arith.numeric.pos <- function(op, x, y, ...) {
   )
 }
 
+#' @export
 vec_arith.pos.numeric <- function(op, x, y, ...) {
   switch(op,
     "&" = ,
@@ -227,6 +235,7 @@ vec_arith.pos.numeric <- function(op, x, y, ...) {
   )
 }
 
+#' @export
 vec_math.pos <- function(.fn, .x, ...) {
   switch(.fn,
     sum = new_raw_pos(lapply(vctrs::vec_data(.x), sum)),

@@ -203,7 +203,7 @@ plot_cords <- function(x = NULL, y = NULL, shape) {
 #'
 #' @keywords internal
 #'
-#' @seealso [`render()`], [`plot_cords()`]
+#' @seealso [`render()`], [`plot_cords()`], [`shape`]
 render_frame <- function(shape, range_x = NULL, range_y = NULL) {
   coords <- plot_cords(range_x, range_y, shape)
   po <- par(mar = c(0, 0, 0, 0))

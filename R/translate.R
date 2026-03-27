@@ -1,10 +1,10 @@
 #' Translate an object to a new position
 #'
-#' `obj_translate()` moves a [`shape`] or [`transform`] to a new position.
+#' `obj_translate()` moves a [shape] or [transform] to a new position.
 #' The position can be specified in global (world) or local coordinates.
 #'
-#' @param obj Object to translate. Methods exist for `transform` and `shape`.
-#' @param to Target position, typically a [`pos`] object. If missing,
+#' @param obj Object to translate. Methods exist for [transform] and [shape].
+#' @param to Target position, typically a [pos()] object. If missing,
 #'   defaults to `pos(0, 0)`.
 #' @param ... Additional arguments passed to methods.
 #' @param local If `FALSE` (default), translate in world coordinates;
@@ -12,7 +12,7 @@
 #'
 #' @return The modified object.
 #'
-#' @seealso [`obj_rotate`], [`obj_scale`], [`translate()`]
+#' @seealso [obj_rotate()], [obj_scale()], [translate()], [window()]
 #'
 #' @export
 obj_translate <- new_generic(

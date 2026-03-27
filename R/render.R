@@ -1,16 +1,16 @@
 #' Render a shape hierarchy
 #'
-#' `render()` draws a [`shape`] and all of its children. The default
+#' `render()` draws a [shape] and all of its children. The default
 #' method assumes that an appropriate graphics device is already open
 #' and that shape-specific `render()` methods are defined elsewhere
 #' (e.g. for rectangles, points, polygons, and text).
 #'
-#' @param shape A [`shape`] object to render, typically a [`window()`]
+#' @param shape A [shape] object to render, typically a [window()]
 #'   or other top-level container.
 #'
 #' @return The input `shape`, invisibly.
 #'
-#' @seealso [`anim()`], [`render_gif()`]
+#' @seealso [anim()], [render_gif()]
 #'
 #' @export
 render <- new_generic("render", "shape", function(shape) S7_dispatch())

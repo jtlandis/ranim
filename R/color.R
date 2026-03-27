@@ -13,12 +13,12 @@ method(obj_color, shape) <- function(shape, color) {
 #' @param obj A [`shape`] object to recolor.
 #' @param color_from Starting color.
 #' @param color_to Ending color.
-#' @param amount Numeric in `[0, 1]` giving interpolation fraction
+#' @param amount Numeric in \\[0, 1\\] giving interpolation fraction
 #'   (0 = fully `color_from`, 1 = fully `color_to`).
 #'
 #' @return The modified `shape`, invisibly.
 #'
-#' @seealso [`color()`], [`lerp_colors()`], [`class_color`]
+#' @seealso [color()], [class_color]
 #'
 #' @keywords internal
 obj_color_between <- function(obj, color_from, color_to, amount) {

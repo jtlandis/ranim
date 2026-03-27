@@ -76,7 +76,7 @@ scale_points <- function(obj, scale) {
 #' * `tr`: A [`pos`] for the top-right corner.
 #' * `fps`: Frames per second for all actions. If `NULL`, uses real-time
 #'   mode; if numeric, sets fixed frame timing.
-#' * All properties inherited from [`shape`]: `trans`, `parent`,
+#' * All properties inherited from [shape]: `trans`, `parent`,
 #'   `children`, `actions`, `color`, etc.
 #'
 #' @section Constructor:
@@ -86,14 +86,14 @@ scale_points <- function(obj, scale) {
 #' @param bl A [`pos`] for the bottom-left corner of the window.
 #' @param tr A [`pos`] for the top-right corner of the window.
 #' @param trans A [`transform`] object. Defaults to `transform()`.
-#' @param parent An optional parent [`shape`]
-#' @param children Optional list of child [`shape`] objects.
+#' @param parent An optional parent [shape]
+#' @param children Optional list of child [shape] objects.
 #' @param actions Optional list of [`action`] objects to apply.
 #' @param color A color specification. Default is transparent white.
 #' @param fps Frames per second for animation. If `NULL` (default),
 #'   uses real-time mode. If numeric, uses fixed frame timing.
 #'
-#' @return An object of class `window` (inherits from [`shape`]).
+#' @return An object of class `window` (inherits from [shape]).
 #'
 #' @examples
 #' # Create a 10x5 window
@@ -102,7 +102,7 @@ scale_points <- function(obj, scale) {
 #' # With FPS set to 25
 #' w <- window(bl = 0, tr = pos(10, 5), fps = 25)
 #'
-#' @seealso [`shape`], [`rect()`], [`anim()`], [`render_gif()`]
+#' @seealso [shape], [rect()], [anim()], [render_gif()]
 #'
 #' @export
 window <- new_class(
@@ -154,8 +154,15 @@ method(get_positions, window) <- function(obj) {
   positions(obj@bl, obj@tr)
 }
 
-#' if recursive is TRUE, rotate all children
-#' if recursive is FLASE, only rotate the window
+#' Window rotation helper
+#'
+#' If `recursive` is `TRUE`, rotate all children; if `FALSE`, only rotate
+#' the window itself.
+#'
+#' @name window-rotation
+#' @keywords internal
+NULL
+
 method(obj_rotate, list(window, class_pos)) <- function(obj, around,
                                                         ...,
                                                         radians = degrees * pi / 180,

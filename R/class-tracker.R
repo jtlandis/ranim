@@ -1,6 +1,9 @@
+#' @include clone.R
 
-#' Tracker objects
+#' @title Tracker objects
+#' @name tracker
 #'
+#' @description
 #' A `tracker` manages references to specific shapes within a hierarchy,
 #' preserving those references when the hierarchy is cloned. This is
 #' essential for working with complex shape trees where you need to
@@ -20,7 +23,7 @@
 #' @section Constructor:
 #' `tracker(object, tracked = list())`
 #'
-#' @param object A [`shape`] object (typically a [`window()]]) to track
+#' @param object A [`shape`] object (typically a [window()]) to track
 #'   children within.
 #' @param tracked Optional named list of shapes to track initially.
 #'
@@ -61,7 +64,7 @@
 #' # Restore to checkpoint
 #' restored_trk <- checkpoint@restore()
 #'
-#' @seealso [`obj_clone()`], [`shape`], [`window()`]
+#' @seealso [obj_clone()], [shape], [window()]
 #'
 #' @export
 tracker <- new_class(
@@ -186,6 +189,7 @@ print.tracker <- function(x, ...) {
   invisible(x)
 }
 
+#' @export
 `$.tracker` <- function(obj, name) {
   if (name %in% names(obj@tracked)) {
     obj@tracked[[name]]

@@ -1,13 +1,13 @@
 #' Rotate a shape or transform
 #'
-#' `obj_rotate()` rotates a [`shape`] or [`transform`] around a given
-#' point. It updates the position and/or angle of the object, and can
-#' optionally recurse into all children of a shape.
+#' `obj_rotate()` rotates a [shape][shape] or [transform][transform]
+#' around a given point. It updates the position and/or angle of the
+#' object, and can optionally recurse into all children of a shape.
 #'
-#' @param obj Object to rotate. Methods are provided for `shape`
-#'   and `transform`.
+#' @param obj Object to rotate. Methods are provided for [shape][shape]
+#'   and [transform][transform].
 #' @param around Location to rotate around. If missing, the object's
-#'   global position is used.
+#'   global position is used (see [obj_pos()]).
 #' @param ... Passed on to methods.
 #' @param radians Numeric; rotation angle in radians.
 #' @param degrees Numeric; rotation angle in degrees. If both are provided,
@@ -25,7 +25,7 @@
 #' # Rotate 45 degrees around the center
 #' obj_rotate(rect_obj, around = pos(5, 5), degrees = 45)
 #'
-#' @seealso [`obj_scale()`], [`obj_translate()`], [`rotate()`]
+#' @seealso [obj_scale()], [obj_translate()], [window()]
 #'
 #' @export
 obj_rotate <- new_generic(

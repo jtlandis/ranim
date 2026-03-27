@@ -481,11 +481,11 @@ spawn_grid <- function(
 #' Extract opacity from a color
 #'
 #' `opaqueness()` extracts the alpha (opacity) value from a color
-#' and returns it as a numeric in [0, 1].
+#' and returns it as a numeric in \\[0, 1\\].
 #'
 #' @param col A color specification.
 #'
-#' @return Numeric in [0, 1]; 0 is fully transparent, 1 is fully opaque.
+#' @return Numeric in \\[0, 1\\]; 0 is fully transparent, 1 is fully opaque.
 #'
 #' @seealso [`opaque()`], [`class_color`]
 #'
@@ -498,7 +498,7 @@ opaqueness <- function(col) col2rgb(col, alpha = TRUE)[4, , drop = TRUE] / 255L
 #' keeping the RGB components unchanged.
 #'
 #' @param col A color specification (any format accepted by [`class_color`]).
-#' @param level Numeric in [0, 1]; 0 is fully transparent, 1 is fully opaque.
+#' @param level Numeric in \\[0, 1\\]; 0 is fully transparent, 1 is fully opaque.
 #'
 #' @return A color object with the specified opacity.
 #'

@@ -84,7 +84,7 @@ stroke_prop <- new_property(
 #' @param actions Optional list of [`action`] objects to apply.
 #' @param color A color specification (see [`class_color`]). Default `"black"`.
 #' @param weight Numeric controlling curve smoothness. -1 (default) means straight lines;
-#'   values in [0, 1] create curved lines.
+#'   values in \\[0, 1\\] create curved lines.
 #' @param arrow Optional [`arrow`] object for arrow decoration.
 #' @param stroke Line type: `"solid"`, `"dashed"`, `"dotted"`, etc.
 #'   Default `"solid"`.

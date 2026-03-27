@@ -11,8 +11,9 @@
 #' @include shape-line.R
 #' @include class-window.R
 
-#' Clone objects
+#' @title Clone objects
 #'
+#' @description
 #' `obj_clone()` creates a deep copy of an object, recursively cloning
 #' all nested structures. This is essential for preserving animation
 #' state without modifying the original object, and for creating
@@ -48,7 +49,7 @@
 #' rect_obj_clone <- w_clone@children[[1]]
 #' rect_obj_clone@color <- "red"
 #'
-#' @seealso [`tracker()`], which preserves references to specific shapes
+#' @seealso [tracker], which preserves references to specific shapes
 #'   during cloning.
 #'
 #' @export
