@@ -1,3 +1,13 @@
+#' @include class-time.R
+
+#' Substitute expressions in an environment
+#'
+#' @param expr An expression to substitute.
+#' @param env An environment in which to perform substitution.
+#'
+#' @return The substituted expression.
+#'
+#' @keywords internal
 ensub <- function(expr, env) {
   if (missing(env)) {
     env <- parent.frame()
@@ -7,6 +17,19 @@ ensub <- function(expr, env) {
 
 class_expr_to <- new_union(class_name, class_call)
 
+#' Expression mapping for action constructors
+#'
+#' `expr_map()` is a small helper class used by [`into_action()`] to
+#' describe how arguments in a user-facing action constructor
+#' are rewritten into calls to a lower-level implementation.
+#'
+#' Most users should not need to work with `expr_map` directly.
+#'
+#' @param ... Named arguments mapping parameter names to expressions.
+#'
+#' @return An object of class `expr_map`.
+#'
+#' @keywords internal
 expr_map <- new_class(
   "expr_map",
   properties = list(
@@ -51,6 +74,33 @@ expr_map <- new_class(
   }
 )
 
+#' Action objects
+#'
+#' `action()` wraps a simple `(obj, time)` function into an object that
+#' can be scheduled and combined with other actions. Actions are
+#' associated with [`time`] objects and are attached to [`shape`]
+#' instances via the `@action` property.
+#'
+#' @param func A function with signature `function(obj, time)` that
+#'   performs the animation. The `obj` parameter is the shape being
+#'   animated, and `time` is a [`time`] object tracking progress.
+#' @param time A [`time`] object controlling duration, easing, and
+#'   repetition of the action.
+#'
+#' @section Methods:
+#' * `$then(next_action)`: Chain another action to run after this one.
+#'   Returns an [`act_series`].
+#' * `$finally(final_action)`: Alias for `$then()`.
+#' * `$reset()`: Reset the time state to the beginning.
+#' * `$repeating(times)`: Set the number of repetitions.
+#' * `$is_done`: Logical; whether the action is complete.
+#' * `$left`: Remaining time in the current cycle.
+#'
+#' @return An object of class `action`.
+#'
+#' @seealso [`time`], [`shape`], [`act_series`], [`into_action()`]
+#'
+#' @export
 action <- new_class(
   "action",
   parent = class_function,
@@ -112,12 +162,6 @@ action <- new_class(
         self@time@left
       }
     )
-    # duration = new_property(
-    #   class = class_numeric,
-    #   getter = function(self) {
-    #     self@time@duration
-    #   }
-    # )
   ),
   constructor = function(func,
                          time) {
@@ -129,13 +173,10 @@ action <- new_class(
     }
     new_object(
       function(obj, delta_time) {
-        # odt <- delta_time
-        # ot <- obj_clone(time)
         delta_time <- enforce_zero(
           delta_time, time@step(delta_time)@delta_time
         )
         if (delta_time > 1e-15) {
-          # browser()
           warning(sprintf("attempted to push time past limit by %.04f", delta_time))
         }
         func(obj, time)
@@ -151,6 +192,14 @@ action <- new_class(
   }
 )
 
+#' Enforce zero on near-zero values
+#'
+#' @param old_dt Original delta time.
+#' @param new_dt New delta time.
+#'
+#' @return Numeric value, coerced to exactly 0 if nearly zero.
+#'
+#' @keywords internal
 enforce_zero <- function(old_dt, new_dt) {
   val <- old_dt - new_dt
   if (abs(val) < 1e-12) {
@@ -159,6 +208,17 @@ enforce_zero <- function(old_dt, new_dt) {
   val
 }
 
+#' Capture action sequence as a function
+#'
+#' Internal helper that creates a function to execute a sequence
+#' of actions with proper time tracking and cycling.
+#'
+#' @param actions An environment containing `.data` (list of actions)
+#'   and `.index` (current action index).
+#'
+#' @return A function `function(obj, time)` that executes actions sequentially.
+#'
+#' @keywords internal
 capture_actions <- function(actions) {
   force(actions)
   function(obj, time) {
@@ -210,6 +270,33 @@ capture_actions <- function(actions) {
   }
 }
 
+#' Sequences of actions
+#'
+#' `act_series()` combines multiple [`action`] objects into a
+#' single composite action that runs them in sequence, optionally
+#' repeating the entire series.
+#'
+#' @param ... One or more [`action`] objects to execute in sequence.
+#' @param repeating Number of times to repeat the entire series
+#'   (0 = run once, 1 = run twice, etc.).
+#'
+#' @return An object of class `act_series`, which itself is an [`action`].
+#'
+#' @details
+#' An `act_series` executes each action in sequence, advancing to the
+#' next only after the current action completes. The total duration
+#' is the sum of all individual action durations.
+#'
+#' @examples
+#' # Sequence: move for 1 second, then scale for 0.5 seconds
+#' series <- act_series(
+#'   translate(to = pos(5, 5), time = time(1)),
+#'   scale2(size = 2, time = time(0.5))
+#' )
+#'
+#' @seealso [`action`], [`time`], [`translate()`], [`scale2()`]
+#'
+#' @export
 act_series <- new_class(
   "act_series",
   parent = action,
@@ -274,16 +361,6 @@ act_series <- new_class(
         curr_action@left
       }
     )
-    # duration = new_property(
-    #   class = class_numeric,
-    #   getter = function(self) {
-    #     action_env <- attr(self, "actions")
-    #     dur <- vapply(action_env$.data, prop, numeric(1), name = "duration")
-    #     dur <- sum(dur)
-    #     self@time@time_scale <- 1 / dur
-    #     dur
-    #   }
-    # )
   ),
   constructor = function(..., repeating = 0) {
     dots <- rlang::list2(...)
@@ -315,6 +392,13 @@ act_series <- new_class(
   }
 )
 
+#' Match function call
+#'
+#' @param obj Object for which to match the call.
+#'
+#' @return A call object.
+#'
+#' @keywords internal
 match_call <- function(obj) {
   env <- parent.frame()
   obj <- substitute(obj)
@@ -322,6 +406,14 @@ match_call <- function(obj) {
   call
 }
 
+#' Get methods for a generic
+#'
+#' @param generic A generic function or name.
+#' @param name String name of the generic.
+#'
+#' @return A list of method implementations.
+#'
+#' @keywords internal
 get_methods <- function(generic, name = deparse(substitute(generic))) {
   force(name)
   if (is.character(generic)) {
@@ -429,6 +521,38 @@ all_formals <- function(func, name) {
 #' @param remap a expr_map object that describes an
 #' argument for the returned function and how it may be
 #' augmented within func().
+#' Turn a function into an action constructor
+#'
+#' `into_action()` converts an existing function into a higher-level
+#' *action constructor* that returns [`action`] objects instead of
+#' performing work immediately.
+#'
+#' This is used internally to build user-friendly verbs like
+#' [`translate()`], [`scale2()`], and color transitions. It takes a
+#' base function `func` and an [`expr_map`] describing how caller
+#' arguments should be injected into `func`.
+#'
+#' @param func A function to wrap. It should normally take a shape-like
+#'   object as its first argument.
+#' @param remap An [`expr_map`] object describing how arguments
+#'   in the returned action constructor are translated into
+#'   arguments of `func`. Captured arguments are forced before
+#'   the action is created to ensure proper scoping.
+#' @param obj_arg Name of the argument in `func` that receives
+#'   the animated object. Defaults to the name of the first
+#'   formal argument of `func`.
+#'
+#' @return A new function that, when called with `time=` and any
+#'   additional arguments, returns an [`action`] object.
+#'
+#' @examples
+#' # This is how translate() is implemented:
+#' # translate <- into_action(obj_translate,
+#' #   expr_map(to = to, local = FALSE))
+#'
+#' @seealso [`action`], [`expr_map`]
+#'
+#' @export
 into_action <- function(func, remap, obj_arg = names(formals(func))[1]) {
   action_func_ <- substitute(func)
   func_name <- as.character(action_func_)
@@ -506,6 +630,7 @@ into_action <- function(func, remap, obj_arg = names(formals(func))[1]) {
   func
 }
 
+#' @export
 method(print, action) <- function(x, indent = "", ...) {
   cat(
     sprintf("%s%s\n", indent, format(x))
@@ -513,6 +638,7 @@ method(print, action) <- function(x, indent = "", ...) {
   invisible(x)
 }
 
+#' @export
 method(print, act_series) <- function(x, indent = "", ...) {
   cat(
     sprintf(
@@ -529,6 +655,7 @@ method(print, act_series) <- function(x, indent = "", ...) {
   invisible(x)
 }
 
+#' @export
 method(format, action) <- function(x, ...) {
   c(
     "<action>",

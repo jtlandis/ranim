@@ -1,8 +1,48 @@
-shape <- new_class("shape",
+#' @include class-scalars.R
+#' @include class-pos.R
+#' @include class-transform.R
+#' @include util-ease.R
+#' @include class-time.R
+#' @include util-action.R
+
+#' Shape objects
+#'
+#' A `shape` is the fundamental unit of the animation system. Shapes
+#' can contain other shapes (children), have a position and size
+#' (through a [`transform`] object), and carry a list of time-varying
+#' [`action`] objects that drive animation.
+#'
+#' Shapes form a tree: each shape has at most one parent, and
+#' zero or more children. Transformations are anchored at the
+#' parent's global position, so moving or scaling a parent
+#' implicitly affects all of its descendants.
+#'
+#' @section Properties:
+#' * `trans`: a [`transform`] giving the local/global position,
+#'   size, and anchor.
+#' * `parent`: another `shape` or `NULL`.
+#' * `children`: a list of child shapes.
+#' * `global`: computed position in world coordinates.
+#' * `actions`: a list of [`action`] objects to apply to this shape.
+#' * `action`: function to attach new actions to this shape.
+#' * `act`: function to advance animation state.
+#' * `color`: a [`class_color`] object used by rendering methods.
+#' * `size`: numeric size (derived from transform).
+#'
+#' @section Constructor:
+#' `shape(trans = transform(), parent = NULL, children = list(),
+#' actions = list(), color = "black")`
+#'
+#' Most users will not construct bare `shape` objects directly;
+#' instead they work with concrete shapes like [`rect()`], [`point()`],
+#' [`polygon()`], [`text()`], etc., which all extend `shape`.
+#'
+#' @export
+shape <- S7::new_class("shape",
   parent = class_env,
   properties = list(
     trans = transform,
-    parent = new_property(
+    parent = S7::new_property(
       class = class_any,
       default = NULL,
       setter = function(self, value) {
@@ -20,7 +60,7 @@ shape <- new_class("shape",
             }
           }
         } else {
-          if (!S7_inherits(value, shape)) {
+          if (!S7::S7_inherits(value, shape)) {
             stop("parent must be a shape object or NULL", call. = FALSE)
           }
           # set the parent
@@ -226,10 +266,12 @@ method(print, shape) <- function(x, ...) {
   invisible(x)
 }
 
+#' @export
 method(obj_size, shape) <- function(obj) {
   obj@trans@size
 }
 
+#' @export
 method(obj_anchor, shape) <- function(obj) {
   obj@trans@anchor
 }
@@ -274,6 +316,7 @@ update_trans <- function(self) {
   self
 }
 
+#' @export
 method(obj_pos, shape) <- function(obj, local = FALSE) {
   if (local) {
     obj@trans@offset
@@ -283,10 +326,12 @@ method(obj_pos, shape) <- function(obj, local = FALSE) {
 }
 
 
+#' @export
 method(remaining_time, action) <- function(object, ...) {
   remaining_time(object@time, ...)
 }
 
+#' @export
 method(remaining_time, shape) <- function(object, ...) {
   this_remaining <- if (length(object@actions)) {
     vapply(object@actions,

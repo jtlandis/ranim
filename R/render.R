@@ -1,5 +1,21 @@
+#' Render a shape hierarchy
+#'
+#' `render()` draws a [`shape`] and all of its children. The default
+#' method assumes that an appropriate graphics device is already open
+#' and that shape-specific `render()` methods are defined elsewhere
+#' (e.g. for rectangles, points, polygons, and text).
+#'
+#' @param shape A [`shape`] object to render, typically a [`window()`]
+#'   or other top-level container.
+#'
+#' @return The input `shape`, invisibly.
+#'
+#' @seealso [`anim()`], [`render_gif()`]
+#'
+#' @export
 render <- new_generic("render", "shape", function(shape) S7_dispatch())
 
+#' @export
 method(render, shape) <- function(shape) {
   pos <- shape@global
   # plot.xy(xy.coords(pos@x, pos@y),
@@ -17,6 +33,24 @@ method(render, shape) <- function(shape) {
 
 .env <- new.env(parent = emptyenv())
 
+#' Animate a shape hierarchy over time
+#'
+#' `anim()` repeatedly advances the animation state of a [`shape`]
+#' using its `@act` method and calls [`render()`] on each frame.
+#' It is mainly useful for interactive, on-screen animation. For
+#' saving animations as GIF files, see [`render_gif()`].
+#'
+#' @param obj A [`shape`] object to animate.
+#' @param fps Frames per second. If `NULL` (the default), a
+#'   wall-clock based `timed_clock` is used and frame duration
+#'   depends on rendering speed. If numeric, uses a `simple_clock`
+#'   with fixed time steps.
+#'
+#' @return A cloned copy of `obj` in its final state.
+#'
+#' @seealso [`render()`], [`render_gif()`], [`shape`]
+#'
+#' @export
 anim <- new_generic("anim", "obj", function(obj, fps = NULL) S7_dispatch())
 
 simple_clock <- new_class(
@@ -52,6 +86,7 @@ timed_clock <- new_class(
   }
 )
 
+#' @export
 method(anim, shape) <- function(obj, fps = NULL) {
   obj <- obj_clone(obj)
   .env$.last_anim <- obj

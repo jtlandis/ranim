@@ -1,3 +1,69 @@
+
+#' Tracker objects
+#'
+#' A `tracker` manages references to specific shapes within a hierarchy,
+#' preserving those references when the hierarchy is cloned. This is
+#' essential for working with complex shape trees where you need to
+#' maintain access to particular child shapes across multiple animation
+#' iterations.
+#'
+#' @section Properties:
+#' * `object`: The root [`shape`] being tracked.
+#' * `tracked`: A named list of [`shape`] objects to keep track of.
+#' * `find(name)`: Function to locate a tracked shape by name.
+#' * `track(...)`: Function to register new shapes to track.
+#' * `clone()`: Function to create a deep copy of the tracker with all
+#'   references updated.
+#' * `restore()`: Function to clone and restore tracked shapes to the
+#'   calling environment as variables.
+#'
+#' @section Constructor:
+#' `tracker(object, tracked = list())`
+#'
+#' @param object A [`shape`] object (typically a [`window()]]) to track
+#'   children within.
+#' @param tracked Optional named list of shapes to track initially.
+#'
+#' @return An object of class `tracker`.
+#'
+#' @details
+#' A `tracker` is useful when you have a complex shape hierarchy and want
+#' to save checkpoints of the animation state. By tracking specific shapes
+#' (e.g., the main grid, rows, columns), you can restore them later via
+#' `$clone()` and `$restore()` without losing references.
+#'
+#' Example workflow:
+#' 1. Create a window and some shapes.
+#' 2. Use `tracker$track(shape1 = my_shape, shape2 = another)` to register them.
+#' 3. Add animations.
+#' 4. Save state with `checkpoint <- tracker$clone()`.
+#' 5. Continue animating.
+#' 6. Restore with `checkpoint$restore()` to get back the original shapes.
+#'
+#' @examples
+#' w <- window(bl = 0, tr = pos(10, 10))
+#' rect_obj <- rect(width = 2, height = 2, trans = transform(pos(5, 5)))
+#' w@child(rect_obj)
+#'
+#' # Create a tracker
+#' trk <- tracker(w)
+#' trk@track(my_rect = rect_obj)
+#'
+#' # Add animations
+#' rect_obj@action(translate(to = pos(8, 8), time = time(2)))
+#'
+#' # Save state
+#' checkpoint <- trk@clone()
+#'
+#' # Continue animating
+#' rect_obj@action(color("red", "blue", time = time(1)))
+#'
+#' # Restore to checkpoint
+#' restored_trk <- checkpoint@restore()
+#'
+#' @seealso [`obj_clone()`], [`shape`], [`window()`]
+#'
+#' @export
 tracker <- new_class(
   "tracker",
   parent = class_env,
@@ -103,6 +169,7 @@ tracker <- new_class(
   }
 )
 
+#' @export
 print.tracker <- function(x, ...) {
   cat("tracker object\n")
   cat("root object -> ", attr(S7_class(x@object), "name"), "\n", sep = "")

@@ -1,7 +1,46 @@
 one_tol <- 1 - 1e-12
 
-
-
+#' Time objects for animation control
+#'
+#' `time()` creates a time object that controls the duration, pacing,
+#' and repetition of [`action`] objects. Times are tied to easing
+#' functions that determine how values interpolate over the duration.
+#'
+#' @param duration Numeric duration of the animation in seconds.
+#'   Defaults to 1.
+#' @param ease An easing function (see [`ease()`]) that maps time
+#'   [0, 1] to a progress value [0, 1]. Defaults to [`elinear`].
+#' @param repeating Integer: number of times to repeat the animation
+#'   after the first playthrough (0 = play once, 1 = play twice, etc.).
+#'   Can also be `Inf` for infinite repetition.
+#' @param mode Timing mode: `"time"` (default) for real-time updates or
+#'   `"fps"` for fixed frame rate. Usually set via [`window()`].
+#'
+#' @section Properties:
+#' * `time`: Current phase within [0, 1].
+#' * `value`: Current eased value within [0, 1].
+#' * `delta`: Change in value since the last step.
+#' * `iter`: Current iteration count (0-indexed).
+#' * `is_done`: Logical; whether all repetitions are complete.
+#' * `left`: Remaining time in current cycle.
+#' * `remaining`: Total remaining time including all remaining cycles.
+#' * `duration`: Total duration of one cycle.
+#' * `step(delta_time)`: Advance time by `delta_time` units.
+#' * `reset()`: Reset to initial state.
+#'
+#' @return An object of class `time`.
+#'
+#' @examples
+#' # Simple 1-second animation
+#' t <- time(duration = 1)
+#'
+#' # 2-second animation that repeats 3 times (4 total playthroughs)
+#' t <- time(duration = 2, repeating = 3)
+#'
+#' # With cubic easing
+#' t <- time(duration = 1, ease = ease(ein = ecubic))
+#'
+#' @export
 time <- new_class(
   "time",
   parent = class_env,

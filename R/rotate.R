@@ -1,3 +1,33 @@
+#' Rotate a shape or transform
+#'
+#' `obj_rotate()` rotates a [`shape`] or [`transform`] around a given
+#' point. It updates the position and/or angle of the object, and can
+#' optionally recurse into all children of a shape.
+#'
+#' @param obj Object to rotate. Methods are provided for `shape`
+#'   and `transform`.
+#' @param around Location to rotate around. If missing, the object's
+#'   global position is used.
+#' @param ... Passed on to methods.
+#' @param radians Numeric; rotation angle in radians.
+#' @param degrees Numeric; rotation angle in degrees. If both are provided,
+#'   `radians` takes precedence.
+#' @param local Logical; if `TRUE`, rotate in the object's local
+#'   coordinate system instead of world coordinates.
+#'
+#' @return The modified object, invisibly.
+#'
+#' @examples
+#' w <- window(bl = 0, tr = pos(10, 10))
+#' rect_obj <- rect(width = 2, height = 2, trans = transform(pos(5, 5)))
+#' w@child(rect_obj)
+#'
+#' # Rotate 45 degrees around the center
+#' obj_rotate(rect_obj, around = pos(5, 5), degrees = 45)
+#'
+#' @seealso [`obj_scale()`], [`obj_translate()`], [`rotate()`]
+#'
+#' @export
 obj_rotate <- new_generic(
   "obj_rotate",
   c("obj", "around"),
@@ -24,6 +54,7 @@ obj_rotate <- new_generic(
   }
 )
 
+#' @export
 method(
   obj_rotate,
   list(class_any, class_missing)
@@ -43,6 +74,7 @@ method(
   }
 
 
+#' @export
 method(
   obj_rotate,
   list(transform, class_pos)
@@ -56,6 +88,16 @@ method(
   }
 
 
+#' Rotate a transform
+#'
+#' @param trans A [`transform`] object.
+#' @param around A [`pos`] point to rotate around.
+#' @param radians Numeric rotation angle in radians.
+#' @param local Logical; if `TRUE`, rotate in local coordinates.
+#'
+#' @return The modified `transform`, invisibly.
+#'
+#' @keywords internal
 rotate_trans <- function(trans, around, radians, local = FALSE) {
   if (local) {
     trans@offset <- rotate_local_pos(obj = trans@offset, radians = radians)
@@ -68,6 +110,14 @@ rotate_trans <- function(trans, around, radians, local = FALSE) {
   trans
 }
 
+#' Rotate a position locally
+#'
+#' @param obj A [`pos`] to rotate.
+#' @param radians Numeric rotation angle in radians.
+#'
+#' @return A rotated [`pos`].
+#'
+#' @keywords internal
 rotate_local_pos <- function(obj, radians) {
   cosa <- cos(radians)
   sina <- sin(radians)
@@ -79,11 +129,21 @@ rotate_local_pos <- function(obj, radians) {
   )
 }
 
+#' Rotate a position around another position
+#'
+#' @param obj A [`pos`] to rotate.
+#' @param around A [`pos`] center point.
+#' @param radians Numeric rotation angle in radians.
+#'
+#' @return A rotated [`pos`].
+#'
+#' @keywords internal
 rotate_pos_around_pos <- function(obj, around, radians) {
   rotate_local_pos(obj - around, radians) + around
 }
 
 
+#' @export
 method(obj_rotate, list(shape, class_pos)) <-
   function(obj, around,
            ...,
@@ -106,7 +166,6 @@ method(obj_rotate, list(shape, class_pos)) <-
           local = TRUE,
           recursive = recursive
         )
-        # obj@children[[which(obj@children == child)]] <- child
       }
     } else {
       update_trans(obj)

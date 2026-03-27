@@ -1,3 +1,41 @@
+#' Position vectors
+#'
+#' `pos()` creates a vector of (x, y) positions. Positions support
+#' arithmetic operations with other positions and numeric scalars.
+#'
+#' @param x Numeric vector of x-coordinates. If `y` is missing,
+#'   both x and y coordinates are set to `x`.
+#' @param y Numeric vector of y-coordinates. Defaults to `x`.
+#'
+#' @return An object of class `pos` with recycled `x` and `y` components.
+#'
+#' @details
+#' Position objects are built on the **vctrs** infrastructure and support:
+#' - Field access: `pos$x` and `pos$y`
+#' - Arithmetic: `+`, `-`, `*`, `/`, etc. (vectorized)
+#' - Math functions: `sum()`, `mean()`, `prod()` on positions
+#'
+#' Use `positions(...)` to combine multiple `pos` objects into a
+#' single vector.
+#'
+#' @examples
+#' # Create individual positions
+#' p1 <- pos(1, 2)
+#' p2 <- pos(3, 4)
+#'
+#' # Access fields
+#' p1$x
+#' p1$y
+#'
+#' # Arithmetic
+#' p1 + p2
+#' p1 - p2
+#' p1 * 2
+#'
+#' # Combine positions
+#' positions(p1, p2)
+#'
+#' @export
 pos <- function(x = numeric(), y = x) {
   if (!is.numeric(x)) {
     stop("x should be numeric", call. = FALSE)
@@ -61,14 +99,26 @@ pos_num_op <- function(op, pos, num) {
   )
 }
 
+#' Combine position vectors
+#'
+#' `positions()` combines multiple [`pos`] objects or vectors
+#' into a single position vector.
+#'
+#' @param ... One or more [`pos`] objects or numeric values to combine.
+#'
+#' @return A [`pos`] vector.
+#'
+#' @examples
+#' p1 <- pos(1, 2)
+#' p2 <- pos(3, 4)
+#' positions(p1, p2)
+#'
+#' @export
 positions <- function(...) {
   vctrs::vec_c(..., .ptype = new_raw_pos())
 }
 
 .pos_class <- c("pos", "vctrs_rcrd", "vctrs_vctr")
-
-
-
 
 
 new_raw_pos <- function(lst = list(x = numeric(), y = numeric())) {
@@ -82,11 +132,28 @@ new_pos <- function(.data) {
 
 class_pos <- S7::new_S3_class(.pos_class, constructor = new_pos)
 
+#' Check if an object is a position vector
+#'
+#' @param x Object to check.
+#'
+#' @return Logical scalar.
+#'
+#' @export
 is_pos <- function(x) inherits(x, "pos")
 
+#' Check if an object is a scalar position
+#'
+#' `is_scalar_pos()` checks if `x` is a position with exactly
+#' one element.
+#'
+#' @param x Object to check.
+#'
+#' @return Logical scalar.
+#'
+#' @export
 is_scalar_pos <- function(x) length(x) == 1L && is_pos(x)
 
-scalar_pos_prop <- new_property(
+scalar_pos_prop <- S7::new_property(
   class = class_pos,
   validator = function(value) {
     if (length(value) != 1L) {

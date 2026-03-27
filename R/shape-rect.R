@@ -1,3 +1,43 @@
+#' Rectangle shape
+#'
+#' `rect()` creates a rectangular shape object. Rectangles are centered
+#' at their position and scale proportionally with their width and height.
+#'
+#' @param trans A [`transform`] object giving position, size, and angle.
+#'   Defaults to `transform()` (origin, size 1, no rotation).
+#' @param parent An optional parent [`shape`]. If provided, this shape
+#'   becomes a child of the parent.
+#' @param children Optional list of child [`shape`] objects.
+#' @param actions Optional list of [`action`] objects to apply.
+#' @param color A color specification (see [`class_color`]). Default `"black"`.
+#' @param width Numeric; width of the rectangle (default 1).
+#' @param height Numeric; height of the rectangle (default 1).
+#' @param border Color of the rectangle border, or `NA` for no border
+#'   (default).
+#'
+#' @section Properties:
+#' * `width`: Numeric width of the rectangle.
+#' * `height`: Numeric height of the rectangle.
+#' * `border`: Border color or `NA`.
+#' * All properties inherited from [`shape`]: `trans`, `parent`,
+#'   `children`, `actions`, `color`, etc.
+#'
+#' @return An object of class `rect` (inherits from [`shape`]).
+#'
+#' @examples
+#' # Create a red square at (5, 5)
+#' r <- rect(
+#'   width = 2, height = 2,
+#'   color = "red",
+#'   trans = transform(pos(5, 5))
+#' )
+#'
+#' # Add a border
+#' r <- rect(width = 2, height = 2, border = "black")
+#'
+#' @seealso [`point()`], [`polygon()`], [`text()`], [`shape`]
+#'
+#' @export
 rect <- new_class("rect",
   parent = shape,
   properties = list(
@@ -11,6 +51,7 @@ rect <- new_class("rect",
 )
 
 
+#' @export
 method(render, rect) <- function(shape) {
   pos <- shape@global
   x <- vctrs::field(pos, "x")
@@ -35,6 +76,7 @@ method(render, rect) <- function(shape) {
 }
 
 
+#' @export
 method(obj_scale, list(rect, class_pos)) <-
   function(obj, around, ...,
            size,
@@ -55,6 +97,7 @@ method(obj_scale, list(rect, class_pos)) <-
   }
 
 
+#' @export
 method(get_positions, rect) <- function(obj) {
   pos <- obj@global
   x <- vctrs::field(pos, "x")
@@ -65,6 +108,37 @@ method(get_positions, rect) <- function(obj) {
 }
 
 
+#' Calculate grid positions within an object
+#'
+#' `calc_grid()` computes the positions for a regular grid of cells
+#' within an object's bounding box. Useful for laying out grids of
+#' shapes with uniform spacing.
+#'
+#' @param obj A [`shape`] object whose extent is used to define the grid.
+#' @param ncol Number of columns in the grid (default 1).
+#' @param nrow Number of rows in the grid (default 1).
+#' @param padding Padding as a fraction of available space (default 0.05).
+#'   Applied uniformly unless overridden by `xpadding`/`ypadding`.
+#' @param xpadding Padding in x direction as a fraction of space.
+#' @param ypadding Padding in y direction as a fraction of space.
+#' @param margin Margin outside the grid as a fraction of padding
+#'   (default 0.5). Applied uniformly unless overridden by `xmargin`/`ymargin`.
+#' @param xmargin Margin in x direction.
+#' @param ymargin Margin in y direction.
+#'
+#' @return A list of [`pos`] vectors, one per column, where each vector
+#'   contains the positions of all cells in that column. An attribute
+#'   `"features"` contains the computed cell dimensions and spacing.
+#'
+#' @details
+#' The grid is computed as follows:
+#' 1. The object's extent is determined via [`get_extent()`].
+#' 2. Total space is divided by padding to yield the grid cell size.
+#' 3. Cell positions are computed column-by-column.
+#'
+#' @keywords internal
+#'
+#' @seealso [`spawn_grid()`], [`get_extent()`], [`get_positions()`]
 calc_grid <- function(
   obj,
   ncol = 1,

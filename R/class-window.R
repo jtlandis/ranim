@@ -1,3 +1,8 @@
+#' @include render-helpers.R
+#' @include rotate.R
+#' @include scale.R
+#' @include render.R
+
 set_action_time <- new_generic(
   "set_action_time",
   "obj",
@@ -60,6 +65,46 @@ scale_points <- function(obj, scale) {
   invisible(obj)
 }
 
+#' Window objects
+#'
+#' A `window` is a special [`shape`] that defines the canvas for animation.
+#' It has a bounding box (via `bl` and `tr` for bottom-left and top-right),
+#' and optional FPS settings that apply to all children.
+#'
+#' @section Properties:
+#' * `bl`: A [`pos`] for the bottom-left corner.
+#' * `tr`: A [`pos`] for the top-right corner.
+#' * `fps`: Frames per second for all actions. If `NULL`, uses real-time
+#'   mode; if numeric, sets fixed frame timing.
+#' * All properties inherited from [`shape`]: `trans`, `parent`,
+#'   `children`, `actions`, `color`, etc.
+#'
+#' @section Constructor:
+#' `window(bl, tr, trans = transform(), parent = NULL, children = list(),
+#' actions = list(), color = "#ffffff00", fps = NULL)`
+#'
+#' @param bl A [`pos`] for the bottom-left corner of the window.
+#' @param tr A [`pos`] for the top-right corner of the window.
+#' @param trans A [`transform`] object. Defaults to `transform()`.
+#' @param parent An optional parent [`shape`]
+#' @param children Optional list of child [`shape`] objects.
+#' @param actions Optional list of [`action`] objects to apply.
+#' @param color A color specification. Default is transparent white.
+#' @param fps Frames per second for animation. If `NULL` (default),
+#'   uses real-time mode. If numeric, uses fixed frame timing.
+#'
+#' @return An object of class `window` (inherits from [`shape`]).
+#'
+#' @examples
+#' # Create a 10x5 window
+#' w <- window(bl = pos(0, 0), tr = pos(10, 5))
+#'
+#' # With FPS set to 25
+#' w <- window(bl = 0, tr = pos(10, 5), fps = 25)
+#'
+#' @seealso [`shape`], [`rect()`], [`anim()`], [`render_gif()`]
+#'
+#' @export
 window <- new_class(
   "window",
   parent = shape,

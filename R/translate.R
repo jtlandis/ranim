@@ -1,3 +1,20 @@
+#' Translate an object to a new position
+#'
+#' `obj_translate()` moves a [`shape`] or [`transform`] to a new position.
+#' The position can be specified in global (world) or local coordinates.
+#'
+#' @param obj Object to translate. Methods exist for `transform` and `shape`.
+#' @param to Target position, typically a [`pos`] object. If missing,
+#'   defaults to `pos(0, 0)`.
+#' @param ... Additional arguments passed to methods.
+#' @param local If `FALSE` (default), translate in world coordinates;
+#'   if `TRUE`, set local offset relative to the anchor.
+#'
+#' @return The modified object.
+#'
+#' @seealso [`obj_rotate`], [`obj_scale`], [`translate()`]
+#'
+#' @export
 obj_translate <- new_generic(
   "obj_translate",
   c("obj", "to"),
@@ -8,6 +25,7 @@ obj_translate <- new_generic(
   }
 )
 
+#' @export
 method(
   obj_translate,
   list(class_any, class_missing)
@@ -23,6 +41,7 @@ method(
   }
 
 
+#' @export
 method(
   obj_translate,
   list(transform, class_pos)
@@ -34,6 +53,15 @@ method(
   }
 
 
+#' Translate a transform
+#'
+#' @param trans A [`transform`] object.
+#' @param to Target position.
+#' @param local If `FALSE`, update global position; if `TRUE`, update local offset.
+#'
+#' @return The modified transform.
+#'
+#' @keywords internal
 translate_trans <- function(trans, to, local = FALSE) {
   if (local) {
     trans@offset <- to
@@ -44,6 +72,7 @@ translate_trans <- function(trans, to, local = FALSE) {
 }
 
 
+#' @export
 method(obj_translate, list(shape, class_pos)) <-
   function(obj, to,
            ...,

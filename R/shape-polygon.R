@@ -1,45 +1,54 @@
-# positions <- new_class(
-#   "positions",
-#   parent = class_list,
-#   properties = list(
-#     center = new_property(
-#       class = pos,
-#       getter = function(self) {
-#         n <- length(self)
-#         if (n == 0) {
-#           return(pos(0, 0))
-#         }
-#         xs <- vapply(self, function(p) S7_data(p@x), numeric(1))
-#         ys <- vapply(self, function(p) S7_data(p@y), numeric(1))
-#         pos(mean(xs), mean(ys))
-#       }
-#     )
-#   ),
-#   validator = function(self) {
-#     if (!all(vapply(self, function(x) is_pos(x), logical(1)))) {
-#       return("all elements must be 'pos' objects")
-#     }
-#     NULL
-#   },
-#   constructor = function(...) {
-#     pts <- rlang::list2(...)
-#     new_object(pts)
-#   }
-# )
-
-# method(format, positions) <- function(x, ...) {
-#   pts <- vapply(x, format, character(1))
-#   paste0("positions: [", paste(pts, collapse = ", "), "]")
-# }
-
-# method(print, positions) <- function(x, ...) {
-#   cat(format(x), "\n")
-#   invisible(x)
-# }
-
-# method(`[`, positions) <- function(x, i, ...) {
-#   positions(!!!NextMethod())
-# }
+#' Polygon shape
+#'
+#' `polygon()` creates a polygon shape object defined by a set of points.
+#' Polygons are filled shapes that can be animated and transformed.
+#'
+#' @param ... One or more [`pos`] objects defining the vertices of the polygon
+#'   in order.
+#' @param trans A [`transform`] object giving position, size, and angle.
+#'   Defaults to `transform()` (origin, size 1, no rotation).
+#' @param parent An optional parent [`shape`]. If provided, this shape
+#'   becomes a child of the parent.
+#' @param children Optional list of child [`shape`] objects.
+#' @param actions Optional list of [`action`] objects to apply.
+#' @param color A color specification (see [`class_color`]). Default `"black"`.
+#'
+#' @return An object of class `apoly` (inherits from [`shape`]).
+#'
+#' @details
+#' Polygons are defined by a sequence of [`pos`] points that form the vertices.
+#' The polygon is closed automatically by the rendering system.
+#'
+#' When scaling or rotating a polygon, all vertex positions are transformed
+#' accordingly while maintaining their relative positions.
+#'
+#' @examples
+#' # Create a triangle
+#' tri <- polygon(
+#'   pos(-1, -1),
+#'   pos(1, -1),
+#'   pos(0, 1),
+#'   color = "blue",
+#'   trans = transform(pos(5, 5))
+#' )
+#'
+#' @seealso [`line()`], [`rect()`], [`point()`], [`shape`]
+#'
+#' @export
+polygon <- function(...,
+                    trans = transform(),
+                    parent = NULL,
+                    children = list(),
+                    actions = list(),
+                    color = "black") {
+  apoly(...,
+    trans = trans,
+    parent = parent,
+    children = children,
+    actions = actions,
+    color = color
+  )
+}
 
 apoly <- new_class(
   "apoly",

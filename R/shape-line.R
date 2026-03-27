@@ -1,3 +1,16 @@
+#' Arrow configuration for lines
+#'
+#' `arrow()` specifies arrow decoration for line shapes. Arrows can be
+#' placed at the start, end, or both ends of a line.
+#'
+#' @section Properties:
+#' * `side`: Where to place the arrow: `"start"`, `"end"`, or `"both"`.
+#'   Default is `"end"`.
+#' * `length`: Length of the arrow head as a fraction of the line length.
+#'   Default 0.15.
+#' * `angle`: Angle of the arrow head in degrees. Default 45.
+#'
+#' @keywords internal
 arrow <- new_class(
   "arrow",
   properties = list(
@@ -58,6 +71,44 @@ stroke_prop <- new_property(
   }
 )
 
+#' Line shape
+#'
+#' `line()` creates a line shape connecting multiple points. Lines can be
+#' straight or curved (via `weight`), and can have arrows at one or both ends.
+#'
+#' @param ... Positions (as [`pos`] objects or coordinates) defining the line path.
+#' @param trans A [`transform`] object giving position, size, and angle.
+#'   Defaults to `transform()`.
+#' @param parent An optional parent [`shape`].
+#' @param children Optional list of child [`shape`] objects.
+#' @param actions Optional list of [`action`] objects to apply.
+#' @param color A color specification (see [`class_color`]). Default `"black"`.
+#' @param weight Numeric controlling curve smoothness. -1 (default) means straight lines;
+#'   values in [0, 1] create curved lines.
+#' @param arrow Optional [`arrow`] object for arrow decoration.
+#' @param stroke Line type: `"solid"`, `"dashed"`, `"dotted"`, etc.
+#'   Default `"solid"`.
+#'
+#' @return An object of class `line` (inherits from [`shape`]).
+#'
+#' @examples
+#' # Straight line from (1, 1) to (9, 9)
+#' l <- line(
+#'   pos(1, 1), pos(9, 9),
+#'   color = "blue",
+#'   trans = transform()
+#' )
+#'
+#' # Curved line with arrow at end
+#' l <- line(
+#'   pos(0, 0), pos(5, 5), pos(10, 0),
+#'   weight = 0.5,
+#'   arrow = arrow(side = "end")
+#' )
+#'
+#' @seealso [`rect()`], [`point()`], [`polygon()`], [`shape`]
+#'
+#' @export
 line <- new_class(
   "line",
   parent = shape,
@@ -96,6 +147,7 @@ dist0 <- function(x0, x1, y0, y1) {
   )
 }
 
+#' @export
 method(render, line) <- function(shape) {
   pos <- shape@global
   pts <- shape@points
@@ -189,6 +241,7 @@ render_arrow <- function(arr, vals, shape) {
   )
 }
 
+#' @export
 method(obj_scale, list(line, class_pos)) <-
   function(obj, around, ...,
            size,
@@ -212,6 +265,7 @@ method(obj_scale, list(line, class_pos)) <-
     )
   }
 
+#' @export
 method(obj_rotate, list(line, class_pos)) <-
   function(obj, around,
            ...,
@@ -236,6 +290,7 @@ method(obj_rotate, list(line, class_pos)) <-
     )
   }
 
+#' @export
 method(get_positions, line) <- function(obj) {
   lst <- lapply(obj@children, get_positions) |>
     unlist()

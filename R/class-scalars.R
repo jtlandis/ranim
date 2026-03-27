@@ -77,7 +77,7 @@
 # }
 
 
-scalar_num_prop <- new_property(
+scalar_num_prop <- S7::new_property(
   class = class_numeric,
   validator = function(value) {
     if (length(value) != 1L || is.na(value)) {

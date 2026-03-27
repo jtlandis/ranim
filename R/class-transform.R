@@ -1,8 +1,29 @@
-transform <- new_class("transform",
+#' Transform objects
+#'
+#' A `transform` encapsulates the spatial properties of a [`shape`]:
+#' position, size, and rotation angle. Transforms use an anchor point
+#' (typically the parent's position) and an offset to compute the
+#' global position.
+#'
+#' @section Properties:
+#' * `anchor`: A [`pos`] object marking the reference point
+#'   (typically inherited from the parent shape).
+#' * `offset`: A [`pos`] object giving the local displacement
+#'   relative to the anchor.
+#' * `global`: Computed property; the sum of `anchor` and `offset`.
+#'   Can be assigned to directly; assignment updates `offset`.
+#' * `size`: Numeric scale factor for the shape (default 1).
+#' * `angle`: Numeric rotation angle in degrees (default 0).
+#'
+#' @section Constructor:
+#' `transform(offset = pos(0), anchor = pos(0))`
+#'
+#' @export
+transform <- S7::new_class("transform",
   properties = list(
     anchor = scalar_pos_prop,
     offset = scalar_pos_prop,
-    global = new_property(
+    global = S7::new_property(
       class = class_pos,
       getter = function(self) {
         self@anchor + self@offset
@@ -19,7 +40,7 @@ transform <- new_class("transform",
     angle = scalar_num_prop
   ),
   constructor = function(offset = pos(0), anchor = pos(0)) {
-    new_object(S7_object(),
+    S7::new_object(S7::S7_object(),
       offset = new_pos(offset),
       anchor = new_pos(anchor),
       size = 1,
@@ -38,7 +59,16 @@ method(print, transform) <- function(x, ...) {
 }
 
 
-obj_size <- new_generic(
+#' Query size of an object
+#'
+#' `obj_size()` retrieves the size property of a shape or transform.
+#'
+#' @param obj Object to query (typically a [`transform`] or [`shape`]).
+#'
+#' @return Numeric size value.
+#'
+#' @export
+obj_size <- S7::new_generic(
   "obj_size",
   "obj",
   function(obj) {
@@ -46,7 +76,18 @@ obj_size <- new_generic(
   }
 )
 
-obj_pos <- new_generic(
+#' Query position of an object
+#'
+#' `obj_pos()` retrieves the position of a [`shape`] or [`transform`].
+#'
+#' @param obj Object to query.
+#' @param local If `FALSE` (default), return global (world) coordinates;
+#'   if `TRUE`, return local offset relative to the anchor.
+#'
+#' @return A [`pos`] object.
+#'
+#' @export
+obj_pos <- S7::new_generic(
   "obj_pos",
   "obj",
   function(obj, local = FALSE) {
@@ -61,7 +102,16 @@ method(
   obj@size
 }
 
-obj_anchor <- new_generic(
+#' Query anchor of an object
+#'
+#' `obj_anchor()` retrieves the anchor point used for transformations.
+#'
+#' @param obj Object to query.
+#'
+#' @return A [`pos`] object.
+#'
+#' @export
+obj_anchor <- S7::new_generic(
   "obj_anchor",
   "obj",
   function(obj) {
@@ -76,7 +126,16 @@ method(
   obj@anchor
 }
 
-obj_angle <- new_generic(
+#' Query rotation angle of an object
+#'
+#' `obj_angle()` retrieves the rotation angle of a shape or transform.
+#'
+#' @param obj Object to query.
+#'
+#' @return Numeric angle in degrees.
+#'
+#' @export
+obj_angle <- S7::new_generic(
   "obj_angle",
   "obj",
   function(obj) {
