@@ -14,8 +14,7 @@ Description: Tools for creating hierarchical, shape-based animations in R.
     composable "action" objects. Animations are rendered frame-by-frame and
     can be exported as GIFs.
 License: MIT + file LICENSE
-URL: https://example.org/ranim
-BugReports: https://example.org/ranim/issues
+BugReports: https://github.com/jtlandis/ranim/issues
 Depends:
     R (>= 4.2.0)
 Imports:
