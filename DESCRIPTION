@@ -1,0 +1,73 @@
+Package: ranim
+Title: Hierarchical Shape-Based Animations in R
+Version: 0.0.0.9000
+Authors@R: c(
+    person(
+      given = "Justin",
+      family = "Landis",
+      role = c("aut", "cre"),
+      email = "jtlandis314@gmail.com"
+    )
+  )
+Description: Tools for creating hierarchical, shape-based animations in R.
+    Shapes can contain other shapes and can be manipulated over time with
+    composable "action" objects. Animations are rendered frame-by-frame and
+    can be exported as GIFs.
+License: MIT + file LICENSE
+URL: https://example.org/ranim
+BugReports: https://example.org/ranim/issues
+Depends:
+    R (>= 4.2.0)
+Imports:
+    S7,
+    rlang,
+    magick,
+    vctrs,
+    scales,
+    RColorBrewer,
+    graphics,
+    grDevices,
+    methods,
+    stats,
+    utils,
+    base
+Suggests:
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+Collate:
+    'class-color.R'
+    'class-env.R'
+    'class-pos.R'
+    'class-scalars.R'
+    'class-time.R'
+    'util-action.R'
+    'util-ease.R'
+    'class-transform.R'
+    'class-shape.R'
+    'render.R'
+    'scale.R'
+    'rotate.R'
+    'render-helpers.R'
+    'class-window.R'
+    'shape-line.R'
+    'shape-text.R'
+    'shape-polygon.R'
+    'shape-rect.R'
+    'shape-point.R'
+    'translate.R'
+    'color.R'
+    'clone.R'
+    'class-tracker.R'
+    'gif.R'
+    'ranim-package.R'
+    'util-actions.R'
+    'zzz-load.R'
+    'zzz-test.R'
+    'zzz.R'
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Config/testthat/edition: 3
+VignetteBuilder: knitr

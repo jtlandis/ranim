@@ -1,0 +1,319 @@
+---
+title: "Getting Started with ranim"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting Started with ranim}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE,
+  fig.width = 8,
+  fig.height = 6
+)
+library(ranim)
+```
+
+## Introduction
+
+**ranim** is an R package for creating hierarchical, shape-based animations. Shapes can contain other shapes and can be manipulated over time with composable "action" objects that drive animation. The package is designed around the concept of a tree hierarchy: each shape can have a parent and children, and transformations applied to a parent automatically affect all descendants.
+
+### Key Concepts
+
+1. **Shapes**: The fundamental building blocks. Includes `rect()`, `point()`, `polygon()`, `text()`, and `line()`.
+2. **Hierarchy**: Shapes can be nested; a child's position and size are relative to its parent.
+3. **Actions**: Time-varying functions that modify shapes (e.g., `translate()`, `rotate()`, `scale2()`, `color()`).
+4. **Time**: Controls animation pacing, easing, and repetition via `time()` objects.
+5. **Windows**: Define the canvas for animation via `window()`.
+6. **Rendering**: Display animations on-screen with `anim()` or export to GIF with `render_gif()`.
+
+## Creating a Simple Animation
+
+### Step 1: Create a Window
+
+```{r}
+library(ranim)
+
+# Create a 10x5 window (canvas)
+w <- window(bl = pos(0, 0), tr = pos(10, 10))
+```
+
+### Step 2: Add Shapes
+
+```{r}
+# Create a rectangle at the center
+rect_obj <- rect(
+  width = 2, 
+  height = 2, 
+  color = "red",
+  trans = transform(pos(5, 5))
+)
+
+# Add it as a child of the window
+w@child(rect_obj)
+```
+
+### Step 3: Add Actions
+
+```{r}
+# Make the rectangle move to a new position over 2 seconds
+rect_obj@action(
+  translate(to = pos(8, 8), time = time(2))
+)
+```
+
+### Step 4: Animate
+
+```{r}
+# Animate on screen at 25 FPS
+anim(w, fps = 25)
+```
+
+Or export to a GIF file:
+
+```{r}
+# Export to GIF
+render_gif(w, "animation.gif", fps = 25, width = 8, height = 6, loop = 0)
+```
+
+## Working with Hierarchies
+
+One of ranim's strengths is managing shape hierarchies. Children inherit transformations from their parents:
+
+```{r}
+w <- window(bl = pos(0), tr = pos(10))
+
+# Create a parent group
+group <- shape(trans = transform(pos(5, 5)))
+w@child(group)
+
+# Add several children to the group
+for (i in 1:3) {
+  child <- point(
+    color = c("red", "blue", "green")[i]
+  )
+  group@child(child, offset = pos(i - 2, 0))
+}
+
+# Animate the entire group
+group@action(
+  rotate(degrees = 360, time = time(3))
+)
+
+anim(w)
+```
+
+## Action Composition
+
+Actions can be chained together using `@then()`:
+
+```{r}
+w <- window(bl = pos(0), tr = pos(10, 10))
+rect_obj <- rect(width = 2, height = 2, trans = transform(pos(5, 5)))
+w@child(rect_obj)
+
+# Chain multiple actions
+rect_obj@action(
+  translate(to = pos(8, 8), time = time(0.5))@then(
+    translate(to = pos(2, 2), time = time(1))
+  )@then(
+    color("red", "blue", time = time(1))
+  )
+)
+
+anim(w)
+```
+
+## Easing Functions
+
+Control how animations progress over time with easing functions:
+
+```{r}
+# Linear easing (default)
+t1 <- time(duration = 1, ease = elinear)
+
+# Cubic ease-in
+t2 <- time(duration = 1, ease = ease(ein = ecubic))
+
+# Cubic ease-in-out
+t3 <- time(duration = 1, ease = ease(ein = ecubic, eout = ecubic))
+
+# Custom: blend cubic in and sine out
+t4 <- time(duration = 1, ease = ease(ein = ecubic, eout = esin))
+```
+
+The `ease()` class comes with a plotting generic to visualize what the curve will be over time.
+
+```{r}
+plot(t1@ease)
+plot(t2@ease)
+plot(t3@ease)
+plot(t4@ease)
+```
+
+Use them in actions:
+
+```{r}
+w <- window(bl = pos(0), tr = pos(10, 10))
+rect_obj <- rect(width = 2, height = 2, trans = transform(pos(5, 5)))
+w@child(rect_obj)
+
+rect_obj@action(
+  translate(to = pos(8, 8), time = time(1, ease = ease(ein = ecubic)))
+)
+
+anim(w)
+```
+
+## Spawning Grids
+
+The `spawn_grid()` action creates a grid of child shapes with optional staggering:
+
+```{r}
+w <- window(bl = pos(0), tr = pos(10, 10))
+container <- rect(
+  trans = transform(pos(5, 5)),
+  color = opaque("white", 0),
+  height = 4, width = 4
+)
+w@child(container)
+
+# Create a 5x5 grid of rectangles
+container@action(
+  spawn_grid(
+    nrow = 5, ncol = 5,
+    color = "steelblue",
+    xtime = 0.1, ytime = 0.1,  # Stagger timing
+    actions = list(
+      scale2(size = -0.5, time = time(0.5))
+    )
+  )
+)
+
+anim(w, fps = 20)
+```
+
+## Using Trackers
+
+Since most objects are environments, this can make iterating difficult to do. The `tracker()` object helps manage complex hierarchies by preserving references to specific shapes.
+
+
+
+```{r}
+w <- window(bl = pos(0), tr = pos(10, 10))
+trk <- tracker(w)
+
+rect1 <- rect(width = 2, height = 2, trans = transform(pos(3, 5)))
+rect2 <- rect(width = 2, height = 2, trans = transform(pos(7, 5)))
+w@child(rect1)
+w@child(rect2)
+
+# Track specific shapes
+trk@track(rect1 = rect1, rect2 = rect2)
+
+# Add animations
+rect1@action(color("red", "blue", time = time(2)))
+rect2@action(color("green", "yellow", time = time(2)))
+
+# Save a checkpoint
+checkpoint <- trk@clone()
+
+# Continue animating
+rect1@action(translate(to = pos(5, 5), time = time(1)))
+rect2@action(translate(to = pos(5, 5), time = time(1)))
+
+anim(w)
+
+# Later, restore to checkpoint
+restored <- checkpoint@restore()
+
+# Continue animating
+rect1@action(translate(to = pos(7, 5), time = time(1)))
+rect2@action(translate(to = pos(3, 5), time = time(1)))
+
+anim(restored@object)
+```
+
+## Advanced: Custom Actions
+
+Create custom actions using the `action()` constructor:
+
+```{r}
+# Define a custom spiral motion
+spiral_action <- function(obj, time_duration) {
+  t <- time(duration = time_duration)
+  action(
+    function(obj, time) {
+      # Move in a spiral pattern
+      angle <- 2 * pi * time@value
+      radius <- 3 * time@value
+      x <- 5 + radius * cos(angle)
+      y <- 5 + radius * sin(angle)
+      obj_translate(obj, to = pos(x, y))
+    },
+    time = t
+  )
+}
+
+w <- window(bl = pos(0), tr = pos(10, 10))
+rect_obj <- rect(width = 1, height = 1, trans = transform(pos(5, 5)))
+w@child(rect_obj)
+
+rect_obj@action(spiral_action(rect_obj, 3))
+anim(w)
+```
+
+## Color Animations
+
+Smoothly transition between colors:
+
+```{r}
+w <- window(bl = pos(0), tr = pos(10))
+rect_obj <- rect(width = 2, height = 2, color = "red", trans = transform(pos(5, 5)))
+w@child(rect_obj)
+
+# Single color transition
+rect_obj@action(
+  color("red", "blue", time = time(2))
+)
+
+anim(w)
+```
+
+Multi-color sequence:
+
+```{r}
+w <- window(bl = pos(0), tr = pos(10))
+rect_obj <- rect(width = 2, height = 2, trans = transform(pos(5, 5)))
+w@child(rect_obj)
+
+# Cycle through multiple colors
+rect_obj@action(
+  colors(c("red", "purple", "blue", "green", "yellow", "red"), durations = 1, repeating = 2)
+)
+
+anim(w)
+```
+
+## Summary
+
+The ranim package provides:
+
+- **Hierarchical shapes** for complex scene composition
+- **Composable actions** for flexible animation control
+- **Flexible timing** with easing functions and repetition
+- **Multiple rendering modes**: interactive (`anim()`), batch (`render_gif()`)
+- **Checkpoint system** (`tracker()`) for managing animation states
+
+For more information, see the function documentation:
+
+- `?shape` — Base shape class
+- `?window` — Canvas for animation
+- `?action` — Animation actions
+- `?time` — Time control
+- `?translate`, `?rotate`, `?scale2`, `?color` — Common actions
+- `?render_gif` — Export to GIF
