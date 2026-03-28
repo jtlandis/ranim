@@ -57,6 +57,8 @@ pal <- scales::pal_gradient_n(scales::pal_viridis(1, 0, 1, 1, "D")(6))
 
 set.seed(123)
 lapply(.assay@children, \(child) {
+  # each shape is an environment
+  # it supports arbitrary storage
   child$start <- child@color
   child$val <- runif(1)
   child$end <- pal(child$val)
@@ -290,12 +292,19 @@ trk <- bk4_2@restore()
 w <- trk@object
 
 # reorder children elements position in world space
-.assay@children <- .assay@children[lapply(.assay@children, obj_pos) |> vctrs::list_unchop() |> (\(x) order(x$x, x$y, decreasing = c(FALSE, TRUE)))()]
+.assay@children <- .assay@children[
+  lapply(.assay@children, obj_pos) |>
+  vctrs::list_unchop() |> 
+  (\(x) order(x$x, x$y, decreasing = c(FALSE, TRUE)))()]
 
+# container for "unwinding" the SE
 .df <- rect(width = 4, height = 5, 
   trans = transform(pos(7.8, 2.5)),
   color = "grey80")
 
+# precompute the destination grid loations, we have
+# only 6 variables in the SE and dims are 10x8 = 80
+# output is a list length 6, with pos vectors of length 80.
 .dest_cache <- calc_grid(
   .df, nrow = 80, ncol = 6,
   ymargin = 1,
@@ -304,8 +313,14 @@ w <- trk@object
 .height <- attr(.dest_cache, "features")["height"]
 .width <- attr(.dest_cache, "features")["width"]
 
+# all scaling in package at the moment affect both x and y
+# propotionally. this can be used to set the goal height/width
+# on the time object
 .simple_scale <- function(obj, time) {
   if (is.null(time$dh)) {
+    #.height and .width are set above representing
+    # the height and width of each computed cell of 
+    # the grid.
     time$dh <- .height - obj@height
     time$dw <- .width - obj@width 
   }
@@ -318,22 +333,42 @@ trk@track(.df = .df)
 
 ```{r}
 .time_sc <- NULL
+# complicated function
 .assay@action(
   action(
+    #act on the assay object first
     function(obj, time) {
+      # action is wrapped behind the @cycled property,
+      # which turns true when the timer finishes a cycle.
+      # Thus this action has the effect of triggering at the
+      # end. Since the timer is repeating (see below), this
+      # field will be reset with the timer.
       if (time@cycled) {
+        # on first instance it should be NULL
         if (is.null(time$index)) {
           time$index <- 0L
         }
+        # every time we cycle, we increment the index
         time$index <- time$index + 1L
+        # make the next time we fire happen a *little* bit faster
         .time_sc <<- time@time_scale <- time@time_scale * 1.01 # accelerate
+        # since we organized the children by their global position space,
+        # we can use the time$index as an index into this list.
         orig_child <- obj@children[[time$index]]
+        # create a clone of the "matrix value", and have that clone
+        # move towards the appropriate destination.
         child <- obj_clone(orig_child)@action(
           translate(.dest_cache[[1]][time$index], time = time(.75, ease = ease(ecubic))),
         )@action(
+          #chaining @action(<action>)@action(<action>) has the effect of 
+          #doing both actions at the same time, so the scaling and
+          #translation happen together.
           .simple_scale,
           time = time(.75, ease = ease(ecubic))
         )
+        # instantly change the original cells opaqueness so it looks like
+        # it's disappearing, while the clone moves and scales to the new
+        # location.
         orig_child@color <- opaque(orig_child@color, 0.5)
         spawn_from(.df, child)
       }
@@ -350,6 +385,11 @@ bk5 <- trk@clone()
 trk <- bk5@restore()
 w <- trk@object
 .rtime_sc <- NULL
+
+# similar idea as before execpt we need
+# to do this across a matrix of children
+# what differes here is how we index into the heirarchy
+# and the .dest_cache
 .unpack_row <- function(obj, time) {
   if (time@cycled) {
     if (is.null(time$col)) {
@@ -410,6 +450,10 @@ bk6 <- trk@clone()
 ```{r}
 trk <- bk6@restore()
 w <- trk@object
+# similar idea as before execpt we need
+# to do this across a matrix of children
+# what differes here is how we index into the heirarchy
+# and the .dest_cache
 .unpack_col <- function(obj, time) {
   if (time@cycled) {
     if (is.null(time$col)) {
@@ -484,97 +528,3 @@ local({
 })
 
 ```
-
-```{r}
-.assay <- .w@children[[1]]
-.assay@children <- .assay@children[lapply(.assay@children, obj_pos) |>
-vctrs::list_unchop() |> order()]
-.pos <- vctrs::list_unchop(lapply(.assay@children, obj_pos))
-row_order <- vapply(.assay@children, \(x) x$val, 1) |>
-  matrix(10, 8) |>
-  dist() |>
-  hclust() |>
-  _$order
-xtent <- get_extent(.assay@children)
-target_y <- matrix(vctrs::field(.pos, "y"), 10, 8) |> _[row_order,]
-col_order <- vapply(.assay@children, \(x) x$val, 1) |>
-  matrix(10, 8) |>
-  t() |>
-  dist() |>
-  hclust() |>
-  _$order
-target_x <- matrix(vctrs::field(.pos, "x"), 10, 8) |> _[,col_order]
-mapply(
-  \(child, target) {
-    child$old_pos <- child@trans@global
-    child$new_pos <- target
-    child@action(
-      translate(target, time = time(3))
-    )
-  },
-  child = .assay@children,
-  target = pos(as.vector(target_x), as.vector(target_y))
-)
-.w3 <- anim(.w)
-
-# mapply(
-#   \(child, target) {
-#     child$new_y <- target
-#     child@action(
-#       offset(by = pos(0, target - vctrs::field(obj_pos(child), "y")), time = time(3))
-#     )
-#   },
-#   child = .w@children,
-#   target = vctrs::vec_rep(target_y, 8)
-# )
-# # .w2 <- anim(.w)
-# mapply(
-#   \(child, target) {
-#     child$new_y <- target
-#     child@action(
-#       offset(by = pos(target - vctrs::field(obj_pos(child), "x"), 0), time = time(3))
-#     )
-#   },
-#   child = .w@children,
-#   target = vctrs::vec_rep_each(target_x, 10)
-# )
-
-```
-
-## Introduction
-
-my name is Justin Landis and today I get to share some of the work I have done since joining the Love Lab.
-
-### Overview
-
-To somewhat spoil the contents of this presentation, I will primarily be discussing the R package I have developed pronounced 'plyxp'.
-In a way, this student seminar works well for me, as I have a personal goal of advertising this package to its target audience.
-And while not everyone in this room may use Bioconductor, or even R packages, this particular room has a higher chance to be an interested user than say any random individual in chapel hill.
-That being said, the work I will be presenting on today is currently being drafted into an application note, where we have made an intentional effort to describe the framework as language agnositic as possible.
-So if by the end of the talk you would be interested in maybe expanding this to python, please reach out to me and we can grab a coffee.
-
-### What is tidyomics
-
-
-
-## Timeline
-
-May 2024 - tidyomics introduced
-Oct 2024 - plyxp accepted into Bioconductor
-June 2025 - GBCC talk
-August 2025 - UseR!: tidyomics workshop
-Oct 2025 - tidySumamrizedExperiment started to use plyxp
-Oct 2025 - CZI project showcase
-2026? - plyxp backend released as biocmask
-2026? - use biocmask to rewrite plyranges?
-
-
-## plyxp syntax
-
-## plyxp semantics
-
-## call for interest in python
-
-## fast forward to transcripts (eventual goal)
-
-## show case progress
