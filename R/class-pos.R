@@ -165,9 +165,15 @@ scalar_pos_prop <- S7::new_property(
   }
 )
 
+#' @export
 vec_ptype2.pos.pos <- function(x, y, ...) new_raw_pos()
 
+
+#' @export
 vec_cast.pos.double <- function(x, to, ...) pos(x)
+
+
+#' @export
 vec_cast.pos.integer <- function(x, to, ...) pos(x)
 
 # new_pos <- new_generic("new_pos", ".data")
@@ -185,6 +191,7 @@ vec_cast.pos.integer <- function(x, to, ...) pos(x)
 #   .data
 # }
 
+
 #' @export
 format.pos <- function(x, ...) {
   sprintf(
@@ -193,10 +200,14 @@ format.pos <- function(x, ...) {
   )
 }
 
+
+#' @method vec_arith pos
 #' @export
 vec_arith.pos <- function(op, x, y, ...) {
   UseMethod("vec_arith.pos", y)
 }
+
+#' @method vec_arith.pos default
 #' @export
 vec_arith.pos.default <- function(op, x, y, ...) {
   vctrs::stop_incompatible_op(op, x, y)
@@ -212,10 +223,14 @@ do_pos_op <- function(op, x, y, ...) {
   )
 }
 
+#' @method vec_arith.pos pos
 #' @export
-vec_arith.pos.pos <- do_pos_op
+vec_arith.pos.pos <- function(op, x, y, ...) {
+  do_pos_op(op, x, y, ...)
+}
 
-#' @export
+#' @method vec_arith.numeric pos
+#' @exportS3Method
 vec_arith.numeric.pos <- function(op, x, y, ...) {
   switch(op,
     "&" = ,
@@ -225,6 +240,7 @@ vec_arith.numeric.pos <- function(op, x, y, ...) {
   )
 }
 
+#' @method vec_arith.pos numeric
 #' @export
 vec_arith.pos.numeric <- function(op, x, y, ...) {
   switch(op,
@@ -234,6 +250,7 @@ vec_arith.pos.numeric <- function(op, x, y, ...) {
     pos_num_op(op, pos = x, num = y)
   )
 }
+
 
 #' @export
 vec_math.pos <- function(.fn, .x, ...) {

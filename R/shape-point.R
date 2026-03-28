@@ -39,7 +39,7 @@ point <- new_class(
 #' @export
 method(render, point) <- function(shape) {
   pos <- shape@global
-  plot.xy(xy.coords(pos@x, pos@y),
+  plot.xy(xy.coords(pos$x, pos$y),
     pch = 16,
     type = "p",
     col = shape@color,

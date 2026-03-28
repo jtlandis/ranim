@@ -7,7 +7,7 @@
   # If you need package-wide initialisation in the future (e.g.,
   # registering S3/S4 methods, setting options, etc.), this is the
   # appropriate place to do it.
-
+  vctrs::s3_register("base::format", "pos")
   invisible()
 }
 

@@ -18,6 +18,15 @@
 #' @importFrom S7 new_property
 #' @importFrom S7 new_S3_class
 #' @importFrom S7 new_union
+#' @importFrom S7 prop
+#' @importFrom S7 S7_class
+#' @importFrom S7 S7_dispatch
+#' @importFrom S7 S7_inherits
 #' @importFrom S7 S7_object
+#' @importFrom S7 super
+#' @importFrom vctrs vec_arith
+#' @importFrom vctrs vec_cast
+#' @importFrom vctrs vec_math
+#' @importFrom vctrs vec_ptype2
 ## usethis namespace: end
 NULL

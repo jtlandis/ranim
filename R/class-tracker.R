@@ -173,7 +173,7 @@ tracker <- new_class(
 )
 
 #' @export
-print.tracker <- function(x, ...) {
+method(print, tracker) <- function(x, ...) {
   cat("tracker object\n")
   cat("root object -> ", attr(S7_class(x@object), "name"), "\n", sep = "")
   if (length(x@tracked) > 0L) {
